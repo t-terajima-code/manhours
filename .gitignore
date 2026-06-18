@@ -1,0 +1,29 @@
+# === 業務データ・個人情報（GitHubに上げない） ===
+# 社員氏名・勤怠・経理・損益などの機密データを除外
+member/
+kintai/
+keiri/
+soneki/
+list/
+results/
+soneki_*/
+
+# 環境固有・入力Excel
+bin/env
+*.xls
+*.xlsx
+*.xlsm
+
+# KPI/ダッシュボードのスクリーンショット（業務成果物）
+*.png
+
+# === Python ===
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+myenv/
