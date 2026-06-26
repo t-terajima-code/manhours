@@ -20,8 +20,11 @@ def parse_env_file(env_file_path):
     if len(lines) < 8:
         raise ValueError("envファイルの行数が不足しています。少なくとも8行必要です。")
         
-    root_dir = lines[0]
-    
+    # env 1行目の絶対パスを優先。配布先で別PC/別ドライブに移動して 1行目が実在しない場合は、
+    # env の場所(bin/)の親=パッケージルートを自動解決して動くようにする。
+    _auto_root = os.path.dirname(os.path.dirname(os.path.abspath(env_file_path)))
+    root_dir = lines[0] if os.path.isdir(lines[0]) else _auto_root
+
     # 4行目が kintaiディレクトリ (勤怠データが置かれている)
     kintai_dir = os.path.join(root_dir, lines[3].lstrip('\\/'))
     

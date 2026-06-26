@@ -2,12 +2,15 @@
 pushd "%~dp0"
 setlocal enabledelayedexpansion
 
-REM python コマンドが使えない場合は py にフォールバック
-where python > nul 2>&1
-if errorlevel 1 (
-    set PYTHON=py
-) else (
-    set PYTHON=python
+REM Python 実行コマンドの判定（MS Store のダミー python 対策。実際に動くコマンドを採用）
+REM まず py ランチャーを試し、ダメなら python。どちらも -c で実行確認する。
+set "PYTHON="
+py -c "import sys" >nul 2>&1 && set "PYTHON=py"
+if not defined PYTHON python -c "import sys" >nul 2>&1 && set "PYTHON=python"
+if not defined PYTHON (
+    echo [エラー] 動作する Python が見つかりません。Python をインストールするか py ランチャーを有効にしてください。
+    pause
+    exit /b
 )
 
 echo ======================================================
@@ -38,6 +41,9 @@ if !count! == 6 set "SONEKI_SUB=%%a"
 if !count! == 7 set "RESULTS_SUB=%%a"
 )
 
+REM env 1行目が実在しなければパッケージルート(このbatの親)を使う（別PC/別ドライブ対応・Python側と整合）
+if not exist "!ROOT_DIR!\" set "ROOT_DIR=%~dp0.."
+
 REM 先頭の \ を除去してパスを結合
 set "SONEKI_DIR=!ROOT_DIR!\!SONEKI_SUB:\=!"
 set "RESULTS_DIR=!ROOT_DIR!\!RESULTS_SUB:\=!"
@@ -45,12 +51,12 @@ echo.
 
 echo --- ファイルの存在確認中 ---
 
-echo [確認1] !RESULTS_DIR!\raw_data.csv
-if not exist "!RESULTS_DIR!\raw_data.csv" (
-echo [NG] 未検出: raw_data.csv
+echo [確認1] !RESULTS_DIR!\%TARGET_MONTH%_raw_data.csv
+if not exist "!RESULTS_DIR!\%TARGET_MONTH%_raw_data.csv" (
+echo [NG] 未検出: %TARGET_MONTH%_raw_data.csv
 goto :MISSING_ERROR
 )
-echo [OK] 検出: raw_data.csv
+echo [OK] 検出: %TARGET_MONTH%_raw_data.csv
 
 echo [確認2] !SONEKI_DIR!\*.xlsx
 if not exist "!SONEKI_DIR!\*.xlsx" (
@@ -76,7 +82,7 @@ exit /b
 
 echo.
 echo 按分処理を実行中...
-%PYTHON% allocate_costs.py --month "%TARGET_MONTH%"
+%PYTHON% allocate_costs.py --month "%TARGET_MONTH%" --data %TARGET_MONTH%_raw_data.csv
 if errorlevel 1 (
     echo.
     echo [エラー] 按分処理中にエラーが発生しました。

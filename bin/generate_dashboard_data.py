@@ -403,7 +403,42 @@ def load_person_months(results_dir):
 
 _PERIOD_SHEET_RE = re.compile(r'◆\d+期$')
 
-def load_inc_name_map(xlsx_path):
+def load_inc_name_map(list_dir, xlsx_path=None):
+    """インシデント番号 → 件名 のマッピングを返す。
+
+    まず list/inc_name_list.csv（配布物に同梱・マスタから生成済み, CP932,
+    ヘッダー inc_num,name）を読む。配布環境ではマスタ xlsx を持たないため、
+    この CSV があれば xlsx 無しでも案件名を復元できる。
+    CSV が無い／空の場合のみ インシデント管理表.xlsx（開発環境のマスタ）に
+    フォールバックする。
+    """
+    name_map = {}
+    csv_path = os.path.join(list_dir, 'inc_name_list.csv')
+    if os.path.exists(csv_path):
+        try:
+            with open(csv_path, 'r', encoding='cp932', newline='') as f:
+                reader = _csv.reader(f)
+                next(reader, None)  # ヘッダー行（inc_num,name）をスキップ
+                for row in reader:
+                    if len(row) < 2:
+                        continue
+                    inc_num = row[0].strip()
+                    name = row[1].strip()
+                    if inc_num and name:
+                        name_map[inc_num] = name
+        except Exception as e:
+            print(f"  警告: inc_name_list.csv 読み込みエラー: {e}")
+    if name_map:
+        return name_map
+    # フォールバック: マスタ xlsx（開発環境のみ存在）
+    if xlsx_path and os.path.exists(xlsx_path):
+        return _load_inc_name_map_from_xlsx(xlsx_path)
+    print("  警告: inc_name_list.csv / インシデント管理表.xlsx いずれからも"
+          "案件名を取得できず、incNameMap は空になります")
+    return name_map
+
+
+def _load_inc_name_map_from_xlsx(xlsx_path):
     """インシデント管理表.xlsx の各期シート（◆NNN期）から
     インシデント番号 → 件名 のマッピングを返す。
 
@@ -484,6 +519,19 @@ def write_data_js(output_file, all_costs, all_hours, kubun_hours, monthly_person
 
 
 def main():
+    """エントリポイント: results/ の各CSVとマスタを統合して dashboard/data/data.js を生成する。
+
+    bin/ の親をルートとして results/・list/・インシデント管理表.xlsx を参照し、
+    allocated_costs / allocated_hours / person_months を読み込んで以下を構築する:
+        allCosts            : 月別・案件別のコスト按分レコード
+        allHours            : 月別・案件別の実働時間（メンバー列を含む）
+        kubunHours          : 5区分別・月別の累計工数（休暇は不働工数へ加算）
+        monthlyPersonMonths : 月別の合計人工数
+        incNameMap          : インシデント番号→件名
+
+    日常業務・教育・不働工数グループは allCosts/allHours から除外する。
+    出力 data.js のみ UTF-8（ダッシュボードJS用）。引数は取らず env の標準時間を読む。
+    """
     script_dir = os.path.dirname(os.path.abspath(__file__))
     root_dir   = os.path.dirname(script_dir)
 
@@ -523,7 +571,7 @@ def main():
     print(f"  monthlyPersonMonths: {len(monthly_person_months)} 件")
 
     print("インシデント件名マッピングを読み込み中...")
-    inc_name_map = load_inc_name_map(inc_xlsx)
+    inc_name_map = load_inc_name_map(list_dir, inc_xlsx)
     print(f"  incNameMap: {len(inc_name_map)} 件")
 
     print(f"data.js を出力中: {output_file}")

@@ -5,9 +5,11 @@ import os
 import statistics
 
 def parse_env_file(env_file_path):
-    """
-    envファイルを読み込み、ディレクトリ構成を取得する
-    1行目：ルート / 7行目：results
+    """envファイル(CP932)を読み込み、results ディレクトリの絶対パスを返す。
+
+    参照行: 1行目=ルート / 7行目=results。
+    1行目の絶対パスが実在しない場合は env の場所(bin/)の親をルートに採用する（可搬性）。
+    例外: FileNotFoundError（未存在）、ValueError（8行未満）。
     """
     if not os.path.exists(env_file_path):
         raise FileNotFoundError(f"設定ファイル '{env_file_path}' が見つかりません。")
@@ -18,7 +20,10 @@ def parse_env_file(env_file_path):
     if len(lines) < 8:
         raise ValueError("envファイルの行数が不足しています。少なくとも8行必要です。")
         
-    root_dir = lines[0]
+    # env 1行目の絶対パスを優先。配布先で別PC/別ドライブに移動して 1行目が実在しない場合は、
+    # env の場所(bin/)の親=パッケージルートを自動解決して動くようにする。
+    _auto_root = os.path.dirname(os.path.dirname(os.path.abspath(env_file_path)))
+    root_dir = lines[0] if os.path.isdir(lines[0]) else _auto_root
     # 7行目(index 6)が results ディレクトリ
     results_dir = os.path.join(root_dir, lines[6].lstrip('\\/'))
     return results_dir
@@ -41,6 +46,16 @@ def is_target_record(naigai, hinku):
     return False
 
 def main():
+    """エントリポイント: raw_data.csv から案件別の人工数(Person-Month)と個人比率を算出する。
+
+    処理の流れ:
+        1. --month / --env / --data を解釈し、results ディレクトリを取得。
+        2. raw_data.csv の対象月から価値稼働工数（is_target_record で判定）の行を抽出。
+        3. 有効担当者（対象工数>0の人）に絞り、案件比率×有効人数で人工数を算出。
+        4. 担当者別・全体の業務統計（件数・平均・最大・最小・標準偏差）を併記。
+
+    出力先: results/{YYYYMM}_person_months.csv（CP932）。
+    """
     parser = argparse.ArgumentParser(description='人工数および個人比率の算出ツール（raw_data.csvベース）')
     parser.add_argument('--env', type=str, default='env')
     parser.add_argument('--month', type=str, required=True, help='対象の年月 (例: 202603)')

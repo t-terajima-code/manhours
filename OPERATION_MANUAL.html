@@ -1,931 +1,1288 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>工数集計・按分システム 集計担当向け作業マニュアル v2.1</title>
-<style>
-:root {
-  --c-primary: #1a56a0;
-  --c-accent:  #e85a00;
-  --c-ok:      #15803d;
-  --c-warn:    #b45309;
-  --c-err:     #b91c1c;
-  --c-stage1:  #1e40af;
-  --c-stage2:  #065f46;
-  --c-bg:      #f8fafc;
-  --c-sidebar: #1e293b;
-  --sidebar-w: 240px;
-}
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body {
-  font-family: "Meiryo","Yu Gothic","ヒラギノ角ゴ ProN",sans-serif;
-  font-size: 14px;
-  line-height: 1.7;
-  background: var(--c-bg);
-  color: #1e293b;
-}
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>工数集計・按分システム 集計担当向け作業マニュアル</title>
+    <style>
 
-/* ===== サイドバー ===== */
-#sidebar {
-  position: fixed;
-  top: 0; left: 0;
-  width: var(--sidebar-w);
-  height: 100vh;
-  background: var(--c-sidebar);
-  color: #cbd5e1;
-  overflow-y: auto;
-  z-index: 100;
-  padding: 16px 0 32px;
-}
-#sidebar .logo {
-  padding: 8px 16px 16px;
-  font-size: 12px;
-  color: #94a3b8;
-  border-bottom: 1px solid #334155;
-  margin-bottom: 8px;
-}
-#sidebar .logo strong { display: block; color: #e2e8f0; font-size: 13px; margin-bottom: 2px; }
-#sidebar nav a {
-  display: block;
-  padding: 5px 16px;
-  color: #94a3b8;
-  text-decoration: none;
-  font-size: 12px;
-  border-left: 3px solid transparent;
-  transition: all .15s;
-}
-#sidebar nav a:hover, #sidebar nav a.active {
-  color: #e2e8f0;
-  border-left-color: #60a5fa;
-  background: rgba(255,255,255,.05);
-}
-#sidebar nav .nav-chapter {
-  padding: 10px 16px 3px;
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: .08em;
-  color: #475569;
-}
-
-/* ===== メインコンテンツ ===== */
-#main {
-  margin-left: var(--sidebar-w);
-  padding: 32px 40px 64px;
-  max-width: 900px;
-}
-
-/* ===== ヘッダー ===== */
-.doc-header {
-  border-bottom: 3px solid var(--c-primary);
-  padding-bottom: 16px;
-  margin-bottom: 32px;
-}
-.doc-header h1 { font-size: 22px; color: var(--c-primary); margin-bottom: 6px; }
-.doc-meta { display: flex; gap: 24px; font-size: 12px; color: #64748b; flex-wrap: wrap; }
-.doc-meta span { display: flex; align-items: center; gap: 4px; }
-
-/* ===== 見出し ===== */
-h2 {
-  font-size: 18px;
-  color: var(--c-primary);
-  border-left: 5px solid var(--c-primary);
-  padding: 8px 12px;
-  background: #eff6ff;
-  margin: 40px 0 16px;
-  scroll-margin-top: 16px;
-}
-h3 {
-  font-size: 15px;
-  color: #1e3a5f;
-  border-bottom: 1px solid #bfdbfe;
-  padding-bottom: 4px;
-  margin: 24px 0 12px;
-  scroll-margin-top: 16px;
-}
-h4 {
-  font-size: 14px;
-  color: #334155;
-  margin: 18px 0 8px;
-  scroll-margin-top: 16px;
-}
-
-/* ===== テキスト要素 ===== */
-p { margin-bottom: 10px; }
-ul, ol { margin: 8px 0 10px 20px; }
-li { margin-bottom: 3px; }
-strong { color: #1e293b; }
-code {
-  background: #e2e8f0;
-  border-radius: 3px;
-  padding: 1px 5px;
-  font-family: "Consolas","Courier New",monospace;
-  font-size: 12px;
-  color: #be185d;
-}
-
-/* ===== コードブロック ===== */
-pre {
-  background: #0f172a;
-  color: #e2e8f0;
-  border-radius: 6px;
-  padding: 14px 16px;
-  overflow-x: auto;
-  font-family: "Consolas","Courier New",monospace;
-  font-size: 12px;
-  line-height: 1.6;
-  margin: 10px 0 14px;
-}
-
-/* ===== テーブル ===== */
-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin: 12px 0 16px;
-  font-size: 13px;
-}
-th {
-  background: var(--c-primary);
-  color: #fff;
-  padding: 8px 12px;
-  text-align: left;
-  font-weight: 600;
-}
-td { padding: 7px 12px; border-bottom: 1px solid #e2e8f0; }
-tr:nth-child(even) td { background: #f1f5f9; }
-
-/* ===== バッジ ===== */
-.badge {
-  display: inline-block;
-  border-radius: 4px;
-  padding: 2px 8px;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: .03em;
-}
-.badge-stage1 { background: #dbeafe; color: var(--c-stage1); border: 1px solid #bfdbfe; }
-.badge-stage2 { background: #d1fae5; color: var(--c-stage2); border: 1px solid #a7f3d0; }
-
-/* ===== カード ===== */
-.card {
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  padding: 16px 20px;
-  margin: 12px 0;
-  background: #fff;
-}
-.card.stage1 { border-left: 4px solid var(--c-stage1); }
-.card.stage2 { border-left: 4px solid var(--c-stage2); }
-.card.warn   { border-left: 4px solid var(--c-warn); background: #fffbeb; }
-.card.err    { border-left: 4px solid var(--c-err);  background: #fff1f2; }
-.card.ok     { border-left: 4px solid var(--c-ok);   background: #f0fdf4; }
-.card-title  { font-weight: 700; margin-bottom: 8px; font-size: 14px; }
-
-/* ===== チェックリスト ===== */
-.checklist { list-style: none; margin: 8px 0; }
-.checklist li {
-  padding: 5px 0 5px 28px;
-  position: relative;
-  border-bottom: 1px solid #f1f5f9;
-}
-.checklist li::before {
-  content: "☐";
-  position: absolute;
-  left: 4px;
-  color: #94a3b8;
-  font-size: 16px;
-  line-height: 1.3;
-}
-
-/* ===== フロー ===== */
-.flow { display: flex; flex-direction: column; gap: 4px; margin: 12px 0; }
-.flow-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  padding: 10px 14px;
-  background: #fff;
-  border: 1px solid #e2e8f0;
-  border-radius: 6px;
-  font-size: 13px;
-}
-.flow-item .step-num {
-  background: var(--c-stage1);
-  color: #fff;
-  border-radius: 50%;
-  width: 24px; height: 24px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 12px; font-weight: 700;
-  flex-shrink: 0;
-  margin-top: 2px;
-}
-.flow-item.s2 .step-num { background: var(--c-stage2); }
-.flow-item strong { display: block; margin-bottom: 2px; }
-
-/* ===== 2カラム ===== */
-.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 12px 0; }
-
-/* ===== ファイル出力 ===== */
-.file-output {
-  background: #0f172a;
-  color: #86efac;
-  border-radius: 6px;
-  padding: 12px 16px;
-  font-family: "Consolas","Courier New",monospace;
-  font-size: 12px;
-  line-height: 1.8;
-  margin: 8px 0;
-}
-.file-output .c { color: #94a3b8; }
-.file-output .s { color: #fbbf24; }
-
-/* ===== メールテンプレート ===== */
-.mail-template {
-  background: #fff;
-  border: 1px solid #e2e8f0;
-  border-radius: 6px;
-  padding: 16px;
-  font-size: 13px;
-  white-space: pre-wrap;
-  font-family: "Meiryo","Yu Gothic",sans-serif;
-  line-height: 1.8;
-}
-.mail-label { font-size: 11px; color: #64748b; font-weight: 700; margin: 8px 0 4px; }
-
-/* ===== アラート ===== */
-.alert {
-  border-radius: 6px;
-  padding: 12px 16px;
-  margin: 12px 0;
-  font-size: 13px;
-}
-.alert-info { background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; }
-
-/* ===== FAQ ===== */
-.faq-item { border-bottom: 1px solid #e2e8f0; padding: 12px 0; }
-.faq-q { font-weight: 700; color: var(--c-primary); margin-bottom: 4px; }
-
-/* ===== 印刷 ===== */
-@media print {
-  #sidebar { display: none; }
-  #main { margin-left: 0; padding: 16px; }
-  h2 { page-break-before: always; }
-}
-
-#sidebar::-webkit-scrollbar { width: 4px; }
-#sidebar::-webkit-scrollbar-thumb { background: #475569; border-radius: 2px; }
-</style>
+        body {
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.8;
+            color: #333;
+            background-color: #f5f5f5;
+            padding: 20px;
+            margin: 0;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+            font-size: 28px;
+        }
+        h2 {
+            color: #34495e;
+            margin-top: 30px;
+            border-left: 4px solid #3498db;
+            padding-left: 15px;
+            font-size: 22px;
+        }
+        h3 {
+            color: #7f8c8d;
+            margin-top: 20px;
+            font-size: 18px;
+        }
+        h4 {
+            color: #95a5a6;
+            margin-top: 15px;
+            font-size: 16px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background-color: #f9f9f9;
+        }
+        table th {
+            background-color: #3498db;
+            color: white;
+            padding: 12px;
+            text-align: left;
+            font-weight: bold;
+        }
+        table td {
+            border: 1px solid #ddd;
+            padding: 12px;
+        }
+        table tr:nth-child(even) {
+            background-color: #f0f8ff;
+        }
+        code {
+            background-color: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: "Courier New", monospace;
+            font-size: 14px;
+        }
+        pre {
+            background-color: #282c34;
+            color: #abb2bf;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            line-height: 1.5;
+        }
+        pre code {
+            background-color: transparent;
+            padding: 0;
+            color: #abb2bf;
+        }
+        blockquote {
+            border-left: 4px solid #3498db;
+            padding-left: 15px;
+            color: #7f8c8d;
+            font-style: italic;
+            margin: 15px 0;
+        }
+        .note {
+            background-color: #fffacd;
+            border-left: 4px solid #ffb6c1;
+            padding: 12px;
+            margin: 15px 0;
+        }
+        .warning {
+            background-color: #ffe4e1;
+            border-left: 4px solid #ff6347;
+            padding: 12px;
+            margin: 15px 0;
+        }
+        .success {
+            background-color: #e8f5e9;
+            border-left: 4px solid #4caf50;
+            padding: 12px;
+            margin: 15px 0;
+        }
+        a {
+            color: #3498db;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        hr {
+            border: none;
+            height: 2px;
+            background: linear-gradient(to right, transparent, #3498db, transparent);
+            margin: 30px 0;
+        }
+        ul, ol {
+            margin: 15px 0;
+            padding-left: 30px;
+        }
+        li {
+            margin: 8px 0;
+        }
+        strong {
+            color: #2c3e50;
+            font-weight: bold;
+        }
+        em {
+            color: #7f8c8d;
+        }
+        .checkbox {
+            margin-right: 8px;
+        }
+    
+    </style>
 </head>
 <body>
+    <div class="container">
+        <h1>工数集計・按分システム 集計担当向け作業マニュアル</h1>
+
+        <p><strong>版</strong>: 2.3</p>
+        <p><strong>作成日</strong>: 2026-05-26　<strong>最終更新</strong>: 2026-06-19</p>
+        <p><strong>対象者</strong>: 工数集計担当者、経理部門</p>
+
+        <p>> 📖 <strong>読みやすいHTML版マニュアル（<code>OPERATION_MANUAL.html</code>）があります。</strong> ブラウザで開いて閲覧できます。env作成手順（<code>make_env.py</code>）やバッチの運用注意など、最新の内容はHTML版に反映されています。本Markdownは記録用として残しています。</p>
+
+        <hr>
+
+        <h2>はじめに</h2>
+
+        <p>このマニュアルは、毎月の工数集計・按分処理を実行する方向けのガイドです。技術的な詳細は含まず、実行手順と確認方法に重点を置いています。</p>
+
+        <p><strong>重要</strong>: このシステムは <strong>2段階処理</strong> を採用しており、月初と月中旬～下旬に分けて実行します。</p>
+
+        <hr>
+
+        <h2>第1章 システム概要（5分で理解）</h2>
+
+        <h3>システムの役割</h3>
+
+        <p>工数集計・按分システムは、従業員が入力した工数（作業時間）を自動的に集計し、経理チームから提供される損益Excelに基づいて案件ごとにコストを計算するシステムです。</p>
 
-<div id="sidebar">
-  <div class="logo">
-    <strong>工数集計・按分システム</strong>
-    集計担当向け作業マニュアル v2.1
-  </div>
-  <nav>
-    <div class="nav-chapter">はじめに</div>
-    <a href="#intro">はじめに</a>
-    <div class="nav-chapter">第1章</div>
-    <a href="#ch1">システム概要</a>
-    <div class="nav-chapter">第2章</div>
-    <a href="#ch2">月次作業スケジュール</a>
-    <div class="nav-chapter">第3章</div>
-    <a href="#ch3">事前準備</a>
-    <div class="nav-chapter">第4章</div>
-    <a href="#ch4">Stage 1 実行</a>
-    <div class="nav-chapter">第5章</div>
-    <a href="#ch5">Stage 2 実行</a>
-    <div class="nav-chapter">第6章</div>
-    <a href="#ch6">結果の確認</a>
-    <div class="nav-chapter">第7章</div>
-    <a href="#ch7">トラブルシューティング</a>
-    <div class="nav-chapter">第8章</div>
-    <a href="#ch8">結果提出のフロー</a>
-    <div class="nav-chapter">第9章</div>
-    <a href="#ch9">月次処理カレンダー</a>
-    <div class="nav-chapter">第10章</div>
-    <a href="#ch10">実行チェックシート</a>
-    <div class="nav-chapter">付録</div>
-    <a href="#faq">FAQ</a>
-  </nav>
-</div>
-
-<div id="main">
-
-<div class="doc-header">
-  <h1>工数集計・按分システム<br>集計担当向け作業マニュアル</h1>
-  <div class="doc-meta">
-    <span>📋 バージョン: <strong>2.1</strong></span>
-    <span>📅 作成: 2026-05-26　最終更新: 2026-06-16</span>
-    <span>👤 対象者: 工数集計担当者・経理部門</span>
-  </div>
-</div>
-
-<section id="intro">
-<h2>はじめに</h2>
-<p>このマニュアルは、毎月の工数集計・按分処理を実行する方向けのガイドです。技術的な詳細は含まず、実行手順と確認方法に重点を置いています。</p>
-<div class="card warn">
-  <strong>⚠ 重要：</strong> このシステムは <strong>2段階処理</strong> を採用しており、月初と月中旬〜下旬に分けて実行します。
-</div>
-</section>
-
-<section id="ch1">
-<h2>第1章　システム概要（5分で理解）</h2>
-
-<h3>システムの役割</h3>
-<p>工数集計・按分システムは、従業員が入力した工数（作業時間）を自動的に集計し、経理チームから提供される損益Excelに基づいて案件ごとにコストを計算するシステムです。</p>
-
-<h3>2段階処理の流れ</h3>
-<div class="two-col">
-  <div class="card stage1">
-    <div class="card-title"><span class="badge badge-stage1">Stage 1</span>　稼働5日以内</div>
-    <code>run_process.bat</code> を実行<br><br>
-    ✅ 工数集計〜検証〜配分<br>
-    ✅ 工数エラーを月初に検出・修正
-  </div>
-  <div class="card stage2">
-    <div class="card-title"><span class="badge badge-stage2">Stage 2</span>　損益Excel到着後（15〜25日ごろ）</div>
-    <code>run_allocate_costs.bat</code> を実行<br><br>
-    ✅ コスト按分（最新損益データ反映）<br>
-    ✅ 経理データを出力・提出
-  </div>
-</div>
-
-<table>
-  <tr><th>フェーズ</th><th>実行時期</th><th>実行ファイル</th><th>処理内容</th><th>所要時間</th></tr>
-  <tr>
-    <td><span class="badge badge-stage1">Stage 1</span></td>
-    <td><strong>稼働5日以内</strong></td>
-    <td><code>run_process.bat</code></td>
-    <td>工数集計〜検証〜配分</td>
-    <td>約5分</td>
-  </tr>
-  <tr>
-    <td><span class="badge badge-stage2">Stage 2</span></td>
-    <td><strong>損益Excel到着時</strong><br><small>（実務：15〜25日ごろ）</small></td>
-    <td><code>run_allocate_costs.bat</code></td>
-    <td>コスト按分<br><small>（最新損益データ反映）</small></td>
-    <td>約2分</td>
-  </tr>
-</table>
-
-<h3>なぜ2段階か？</h3>
-<div class="card ok">
-  <strong>✅ Stage 1（稼働5日以内）</strong>：月初の早期段階で工数集計・勤怠検証・実績配分を実施。工数エラーを月初に検出し、月内に修正できます。
-</div>
-<div class="card warn">
-  <strong>⏳ 損益Excel到着待ち</strong>：経理チームから損益Excelが届くまで待機（月によって15〜25日ごろ。決算スケジュール・年度末等の影響あり）。
-</div>
-<div class="card stage2">
-  <strong>✅ Stage 2（15〜25日ごろ）</strong>：損益Excel到着後、最新の原価データを反映したコスト按分を実施。経理システム用CSV（<code>keiri_YYYYMM.csv</code>）を生成します。
-</div>
-
-<h3>メリット</h3>
-<ol>
-  <li><strong>早期フィードバック</strong>：Stage 1 で工数エラーを月初に検出・修正</li>
-  <li><strong>柔軟な経理連携</strong>：経理チームのスケジュール変更に対応</li>
-  <li><strong>月内完結</strong>：稼働5日＋損益Excel到着後で月内に完了</li>
-  <li><strong>エラー削減</strong>：各段階で確認・修正が可能</li>
-</ol>
-</section>
-
-<section id="ch2">
-<h2>第2章　月次作業スケジュール</h2>
-
-<h3>ステップ1：稼働5日以内（Stage 1）</h3>
-<p><strong>タイミング</strong>：月初から5営業日以内</p>
-<div class="file-output">実行スクリプト: run_process.bat
-
-【例】2026年4月の場合
-  4月1日（水）〜 4月7日（火）の間で実施
-  目安: 4月2日（木）または 4月3日（金）</div>
-
-<div class="flow">
-  <div class="flow-item"><div class="step-num">1</div><div><strong>工数集計</strong>　aggregate_hours.py</div></div>
-  <div class="flow-item"><div class="step-num">2</div><div><strong>勤怠検証</strong>　verify_hours.py</div></div>
-  <div class="flow-item"><div class="step-num">3</div><div><strong>経理CSV出力</strong>　export_keiri_csv.py</div></div>
-  <div class="flow-item"><div class="step-num">4</div><div><strong>実績時間配分</strong>　allocate_actual_hours.py</div></div>
-  <div class="flow-item"><div class="step-num">5</div><div><strong>人月計算</strong>　calculate_person_months.py</div></div>
-</div>
-
-<p><strong>出力ファイル（results/ フォルダ）</strong></p>
-<div class="file-output">raw_data.csv              <span class="c">← 工数集計結果（確認用）</span>
-YYYYMM_actual_hours.csv   <span class="c">← 実績配分結果</span></div>
-
-<h3>ステップ2：損益Excel到着時（Stage 2）</h3>
-<p><strong>タイミング</strong>：経理チームから損益Excelが到着した時点（15〜25日ごろ）</p>
-<div class="file-output">実行スクリプト: run_allocate_costs.bat</div>
-
-<div class="flow">
-  <div class="flow-item s2"><div class="step-num">1</div><div><strong>実績時間配分（再実行）</strong>　allocate_actual_hours.py</div></div>
-  <div class="flow-item s2"><div class="step-num">2</div><div><strong>コスト按分</strong>　allocate_costs.py　← <strong>最新の損益データを反映</strong></div></div>
-</div>
-
-<p><strong>出力ファイル</strong></p>
-<div class="file-output">keiri/
-  keiri_YYYYMM.csv           <span class="s">← ⭐ 経理提出用（最重要）</span>
-results/
-  YYYYMM_allocated_costs.csv <span class="c">← 按分詳細結果</span></div>
-
-<h3>スケジュール例</h3>
-<table>
-  <tr><th>ケース</th><th>Stage 1</th><th>Stage 2</th></tr>
-  <tr><td>損益Excel が20日到着</td><td>4月1〜7日</td><td>4月20日 → 経理提出</td></tr>
-  <tr><td>損益Excel が25日到着</td><td>4月1〜7日</td><td>4月25日 → 経理提出</td></tr>
-  <tr><td>損益Excel が15日到着（早期）</td><td>4月1〜7日</td><td>4月15日 → 経理提出</td></tr>
-</table>
-</section>
-
-<section id="ch3">
-<h2>第3章　事前準備（集計処理前）</h2>
-
-<h3>Stage 1 実行前に確認するファイル</h3>
-<div class="card stage1">
-  <div class="card-title">✅ 従業員の工数ファイル（member フォルダ）</div>
-  <ul>
-    <li>全従業員のCSVファイルが揃っているか</li>
-    <li>ファイル名形式：<code>_W太郎.csv</code> または <code>1_T太郎.csv</code></li>
-    <li>月初までに最新データが入力されているか</li>
-  </ul>
-</div>
-<div class="card stage1">
-  <div class="card-title">✅ 勤怠データ（kintai フォルダ）</div>
-  <ul>
-    <li>HTML形式の勤怠ファイルが置かれているか</li>
-    <li>ファイル名例：<code>kintai_202604.html</code></li>
-    <li>必須項目：従業員名、実働時間</li>
-  </ul>
-</div>
-
-<h3>Stage 2 実行前に確認するファイル</h3>
-<div class="card stage2">
-  <div class="card-title">✅ 損益Excel（soneki フォルダ）</div>
-  <ul>
-    <li>Excelファイル（XLSX形式）が置かれているか</li>
-    <li>ファイル名に事業年度番号を含む（例：<code>事業部別損益表_189.xlsx</code>）</li>
-    <li><strong>重要</strong>：経理チームから「損益Excel到着」通知があったか確認</li>
-    <li>シート名が月名（例：「5月」）になっているか</li>
-  </ul>
-</div>
-
-<h3>環境設定ファイル（env）の作成・確認</h3>
-<p><strong>ファイル場所</strong>：<code>bin\</code> フォルダ直下　<strong>ファイル名</strong>：<code>env</code>（拡張子なし）</p>
-<p>
-  env は、データの置き場所などをシステムに教えるための設定ファイルです。
-  <strong>初回や、フォルダ構成を変えたときだけ</strong>作成すればよく、毎月作り直す必要はありません。
-</p>
-
-<div class="alert alert-info">
-  env ファイルは <strong>手作業で作らず、専用ツール <code>make_env.py</code> で作成</strong>してください。
-  手で作ると行のズレや空行で誤動作することがあります。ツールを使えば正しい形式で確実に作れます。
-</div>
-
-<h4>make_env.py の使い方（かんたん）</h4>
-<div class="flow">
-  <div class="flow-item"><div class="step-num">1</div><div>エクスプローラで <code>bin\</code> フォルダを開く</div></div>
-  <div class="flow-item"><div class="step-num">2</div><div>
-    アドレスバーに <code>cmd</code> と入力して Enter（そのフォルダでコマンド画面が開きます）
-  </div></div>
-  <div class="flow-item"><div class="step-num">3</div><div>
-    次のコマンドを入力して Enter<br>
-    <pre style="margin:6px 0">python make_env.py</pre>
-  </div></div>
-  <div class="flow-item"><div class="step-num">4</div><div>
-    質問が順番に表示されます。<strong>そのままで良ければ何も入力せず Enter</strong>、
-    変えたい項目だけ値を入力します（[ ] 内が初期値）。<br>
-    <pre style="margin:6px 0">プロジェクトルート(絶対パス) [C:\...\manhours]:
-member サブディレクトリ [\member]:
-soneki サブディレクトリ [\soneki]:
-1人日の標準労働時間(時間) [7.5]:</pre>
-  </div></div>
-  <div class="flow-item"><div class="step-num">5</div><div>
-    最後に「<code>env を作成しました</code>」と表示されれば完了です。<br>
-    既に env がある場合は<strong>上書きしてよいか確認</strong>されるので、よければ <code>Y</code> を入力します。
-  </div></div>
-</div>
-
-<p>パスを最初から指定して作りたい場合は、引数でも渡せます（任意）：</p>
-<pre style="margin:6px 0">python make_env.py --root C:\Users\t-ter\data\python\manhours</pre>
-
-<div class="card">
-  <div class="card-title">💡 env の中身（参考）</div>
-  <p>make_env.py は次の <strong>8行（すべて空行なし）</strong>の env を自動で作ります。中身を手で直す必要はありません。</p>
-  <pre>C:\data\project          ← 1行目 プロジェクトルート
-\bin                     ← 2行目 bin フォルダ
-\member                  ← 3行目 工数ファイルフォルダ
-\kintai                  ← 4行目 勤怠Excelフォルダ
-\list                    ← 5行目 マスタデータフォルダ
-\soneki                  ← 6行目 損益Excelフォルダ（Stage 2 用）
-\results                 ← 7行目 集計結果フォルダ
-7.5                      ← 8行目 1人日の標準労働時間（人月換算用）</pre>
-</div>
-</section>
-
-<section id="ch4">
-<h2>第4章　Stage 1 処理の実行（稼働5日以内）</h2>
-
-<div class="alert alert-info">実行するバッチファイル：<strong>bin\run_process.bat</strong></div>
-
-<h3>実行手順</h3>
-<div class="flow">
-  <div class="flow-item"><div class="step-num">1</div><div>エクスプローラで <code>bin\</code> フォルダを開く</div></div>
-  <div class="flow-item"><div class="step-num">2</div><div><strong>run_process.bat</strong> をダブルクリック</div></div>
-  <div class="flow-item"><div class="step-num">3</div><div>
-    対象月を入力して Enter キーを押す（例：<code>202604</code>）<br>
-    <pre style="margin:6px 0">対象の月号を入力してください（例: 202604):
-&gt; 202604</pre>
-  </div></div>
-  <div class="flow-item"><div class="step-num">4</div><div>
-    各ステップで <strong>Y</strong> を入力して実行（スキップするときは N）<br>
-    <pre style="margin:6px 0">[STEP 1] 工数集計データの処理を実行しますか?
-Yes(Y) / No(N): Y</pre>
-  </div></div>
-  <div class="flow-item"><div class="step-num">5</div><div>
-    完了メッセージを確認<br>
-    <pre style="margin:6px 0">======================================================
-  すべてのプロセスが正常に完了しました。
-======================================================</pre>
-  </div></div>
-</div>
-
-<h3>実行後の確認</h3>
-<div class="file-output">results/
-  raw_data.csv              <span class="c">← 工数集計結果（確認用）</span>
-  202604_actual_hours.csv   <span class="c">← 実績配分結果</span></div>
-</section>
-
-<section id="ch5">
-<h2>第5章　Stage 2 処理の実行（損益Excel到着後）</h2>
-
-<h3>実行前チェック</h3>
-<ul class="checklist">
-  <li>経理チームから「損益Excel到着」の連絡を受けたか</li>
-  <li>soneki フォルダに Excel ファイルが置かれているか</li>
-  <li>Stage 1 が正常に完了しているか</li>
-</ul>
-
-<div class="alert alert-info">実行するバッチファイル：<strong>bin\run_allocate_costs.bat</strong></div>
-
-<h3>実行手順</h3>
-<div class="flow">
-  <div class="flow-item s2"><div class="step-num">1</div><div><strong>run_allocate_costs.bat</strong> をダブルクリック</div></div>
-  <div class="flow-item s2"><div class="step-num">2</div><div>対象月を入力して Enter（例：<code>202604</code>）</div></div>
-  <div class="flow-item s2"><div class="step-num">3</div><div>
-    ファイル確認画面を確認し <strong>Y</strong> を入力<br>
-    <pre style="margin:6px 0">[OK] 確認: raw_data.csv
-[OK] 確認: 損益データ 【事業部別損益表_189.xlsx】
-
-この損益データを使用して按分処理を開始しますか?
-Yes(Y) / No(N): Y</pre>
-  </div></div>
-  <div class="flow-item s2"><div class="step-num">4</div><div>
-    完了メッセージを確認<br>
-    <pre style="margin:6px 0">======================================================
-  すべての処理が正常に完了しました。
-======================================================</pre>
-  </div></div>
-</div>
-
-<h3>実行後の確認</h3>
-<div class="file-output">keiri/
-  keiri_202604.csv           <span class="s">← ⭐ 経理提出用（重要）</span>
-results/
-  202604_allocated_costs.csv <span class="c">← 按分詳細結果</span></div>
-</section>
-
-<section id="ch6">
-<h2>第6章　結果の確認</h2>
-
-<h3>Stage 1 完了後：raw_data.csv</h3>
-<table>
-  <tr><th>確認事項</th><th>OK の目安</th><th>NG の場合</th></tr>
-  <tr><td>すべての従業員が含まれているか</td><td>名前が揃っている</td><td>member フォルダを確認</td></tr>
-  <tr><td>工数が0でないか</td><td>各セルに数値あり</td><td>ファイル形式を確認</td></tr>
-  <tr><td>合計工数が妥当か</td><td>160時間前後/人</td><td>管理者に報告</td></tr>
-</table>
-<p><strong>ファイルの見方（例）</strong></p>
-<pre>月,案件名,内外製,品区,太郎,花子,次郎
-2026/04,プロジェクトA,N,code1,160,140,120
-2026/04,プロジェクトB,G,code2,80,100,90</pre>
-
-<h3>Stage 2 完了後：keiri_YYYYMM.csv（最重要）</h3>
-<table>
-  <tr><th>確認事項</th><th>OK の目安</th><th>NG の場合</th></tr>
-  <tr><td>ファイルが生成されているか</td><td>ファイルサイズ &gt; 0</td><td>処理を再実行</td></tr>
-  <tr><td>金額が正数か</td><td>プラスの数値</td><td>損益Excelを確認</td></tr>
-  <tr><td>各案件で複数行あるか</td><td>労務費＋経費の行</td><td>担当者に確認</td></tr>
-  <tr><td>合計金額が損益Excelと一致するか</td><td>金額が一致</td><td>損益Excelのシートを確認</td></tr>
-</table>
-</section>
-
-<section id="ch7">
-<h2>第7章　トラブルシューティング</h2>
-
-<div class="alert alert-info">
-  <strong>バッチファイル（.bat）の文字化けについて：</strong>
-  バッチファイル（<code>run_process.bat</code>、<code>run_allocate_costs.bat</code> など）は
-  文字化けしないよう正しい形式（日本語 Windows 用の文字コード）で保存されています。
-  画面のメッセージが正しく日本語で表示されます。
-</div>
-
-<div class="card warn">
-  <div class="card-title">⚠️ 重要な運用ルール：.bat を直接エディタで編集しない</div>
-  <p>
-    <code>.bat</code> ファイル（<code>run_process.bat</code> など）を
-    <strong>メモ帳などのエディタで開いて直接書き換えないでください</strong>。
-    保存時に文字コードが変わり、画面表示が文字化けして読めなくなる原因になります。
-  </p>
-  <p><strong>バッチの中身を変更したいときは：</strong></p>
-  <ol>
-    <li>システム担当者に依頼してください。</li>
-    <li>担当者は <code>bin\make_bat.py</code> 内の定義を編集し、<code>python make_bat.py</code> を実行して
-      正しい形式で <strong>.bat を再生成</strong>します（手編集はしません）。</li>
-  </ol>
-  <p>このルールを守ることで、文字化けの再発を防げます。</p>
-</div>
-
-<div class="card err">
-  <div class="card-title">❌ エラー1：「ファイルが見つかりません」</div>
-  <p><strong>症状</strong>：<code>raw_data.csv が見つかりません</code> と表示されて止まる</p>
-  <p><strong>原因</strong>：工数ファイルが member フォルダに入っていない、または Stage 1 が未実行</p>
-  <p><strong>対応</strong>：</p>
-  <ol>
-    <li><code>member</code> フォルダに <code>_W従業員名.csv</code> 形式のファイルがあるか確認</li>
-    <li>Stage 1（run_process.bat）が完了しているか確認し、必要なら再実行</li>
-  </ol>
-</div>
-
-<div class="card err">
-  <div class="card-title">❌ エラー2：「損益Excelファイルが読めません」</div>
-  <p><strong>症状</strong>：<code>Excelファイル 'xxx.xlsx' が読み込めませんでした</code></p>
-  <p><strong>原因</strong>：損益ファイルが見つからない、または形式が違う</p>
-  <p><strong>対応</strong>：</p>
-  <ol>
-    <li><code>soneki</code> フォルダに <code>.xlsx</code> ファイルがあるか確認（.xls や .xlsm は不可）</li>
-    <li>Excelで開いて、シート名が「4月」「5月」など月名になっているか確認</li>
-    <li>経理部門に最新ファイルを再送付依頼</li>
-  </ol>
-</div>
-
-<div class="card err">
-  <div class="card-title">❌ エラー3：出力ファイルが空または 0 になっている</div>
-  <p><strong>症状</strong>：<code>raw_data.csv</code> が生成されたが全部 0</p>
-  <p><strong>原因</strong>：従業員の工数ファイルが見つからない、または形式が違う</p>
-  <p><strong>対応</strong>：</p>
-  <ol>
-    <li><code>member</code> フォルダ内のCSVファイルをExcelで開いて形式を確認</li>
-    <li>ファイル名が <code>_W</code> で始まるか、または <code>数字_T</code> で始まるか確認</li>
-    <li>形式が違う場合は担当者に修正を依頼</li>
-  </ol>
-</div>
-
-<div class="card err">
-  <div class="card-title">❌ エラー4：「環境設定ファイルが見つかりません」</div>
-  <p><strong>症状</strong>：<code>設定ファイル 'env' が見つかりません</code></p>
-  <p><strong>原因</strong>：env ファイルがない、またはパスが違う</p>
-  <p><strong>対応</strong>：</p>
-  <ol>
-    <li><code>bin\</code> フォルダに <code>env</code>（拡張子なし）があるか確認</li>
-    <li>ない場合は <code>bin\</code> フォルダで <code>python make_env.py</code> を実行して作成（第3章「環境設定ファイル（env）の作成・確認」を参照）</li>
-  </ol>
-</div>
-
-<div class="card warn">
-  <div class="card-title">❌ エラー5：「'python' は内部コマンドとして認識されていません」</div>
-  <p><strong>症状</strong>：バッチファイル起動直後に上記メッセージが出て終了する</p>
-  <p><strong>原因</strong>：PCに <code>python</code> コマンドがPATH登録されていない（<code>py</code> ランチャーのみの環境）</p>
-  <p><strong>対応</strong>：</p>
-  <ul>
-    <li>バッチファイルは <code>python</code> が見つからない場合に <strong>自動的に <code>py</code> コマンドで再試行</strong> します。通常はそのまま処理が続きます。</li>
-    <li>それでも失敗する場合は、Python公式サイトから Python をインストールし、「Add Python to PATH」にチェックを入れて再インストールしてください。</li>
-  </ul>
-</div>
-
-<div class="card warn">
-  <div class="card-title">⚠️ 警告：「工数の合計が実働時間と異なります」</div>
-  <p><strong>症状</strong>：verify 結果に警告が記録されている</p>
-  <p><strong>原因</strong>：従業員の入力工数と勤怠システムの実働時間に差がある</p>
-  <p><strong>対応</strong>：</p>
-  <ul>
-    <li><strong>軽度の差異（±1時間以内）</strong>：許容範囲 → そのまま進める</li>
-    <li><strong>大きな差異（±5時間以上）</strong>：当人に確認 → 修正後に再実行</li>
-    <li>判断できない場合は管理者に報告</li>
-  </ul>
-</div>
-</section>
-
-<section id="ch8">
-<h2>第8章　結果提出のフロー</h2>
-
-<h3>Stage 2 完了後の確認チェック</h3>
-<ul class="checklist">
-  <li>keiri/ フォルダ内に <code>keiri_YYYYMM.csv</code> があるか（⭐ 経理提出用・最重要）</li>
-  <li>results/ フォルダ内に <code>YYYYMM_allocated_costs.csv</code> があるか</li>
-  <li>ファイルサイズが 0 KB でないか</li>
-  <li>ファイルの最終更新日時が本日か（右クリック → プロパティで確認）</li>
-</ul>
-
-<h3>提出ファイル</h3>
-<div class="two-col">
-  <div class="card" style="border-left:4px solid var(--c-err)">
-    <div class="card-title">🔴 必須ファイル</div>
-    <code>keiri/keiri_YYYYMM.csv</code><br><br>
-    用途：経理システムへの入力用<br>
-    提出先：経理部門<br>
-    形式：CSV（CP932エンコーディング）
-  </div>
-  <div class="card" style="border-left:4px solid #64748b">
-    <div class="card-title">📋 参考ファイル（必要に応じて）</div>
-    <code>results/raw_data.csv</code><br>
-    <code>results/YYYYMM_allocated_costs.csv</code><br><br>
-    用途：月次レビュー・データ検証用
-  </div>
-</div>
-
-<h3>メール提出テンプレート</h3>
-<p class="mail-label">件名</p>
-<div class="mail-template">【202604月次集計完了報告】工数集計・按分結果</div>
-<p class="mail-label">本文</p>
-<div class="mail-template">いつもお疲れ様です。
-
-2026年4月の工数集計・按分処理が完了いたしました。
-
-【処理実行日】
-  Stage 1（前半処理）: 2026-04-03
-  Stage 2（後半処理）: 2026-04-20
-
-【処理内容】
-  ✓ 工数集計: 完了
-  ✓ 勤怠検証: 完了
-  ✓ 実績配分: 完了
-  ✓ コスト按分: 完了
-  ✓ 人月計算: 完了
-
-【集計結果サマリー】
-  - 従業員数: 28名
-  - 案件数: ○件
-  - 合計部門費: ○,○○○千円
-  - エラー/警告: なし
-
-【添付ファイル】
-  - keiri_202604.csv（経理データ ⭐必須）
-  - raw_data.csv（工数集計結果 参考）
-
-ご確認のほどよろしくお願いいたします。</div>
-</section>
-
-<section id="ch9">
-<h2>第9章　月次処理カレンダー</h2>
-<pre>【月初〜5日】稼働5日以内 ★ Stage 1 実行日
-  └─ 午前09:00  工数入力締切確認
-  └─ 午前10:00  run_process.bat 実行
-       ├─ aggregate_hours.py        (工数集計)
-       ├─ verify_hours.py           (勤怠検証)
-       ├─ allocate_actual_hours.py  (実績配分)
-       └─ calculate_person_months.py (人月計算)
-  └─ 午前10:30  結果確認
-  └─ 午前11:00  工数エラー確認・報告
-
-【5日〜15日】待機期間
-  └─ 経理チームが損益Excelを準備中
-  └─ 工数エラーがあれば修正依頼
-
-【15日〜25日ごろ】★ Stage 2 実行日
-  └─ 経理チームから「損益Excel到着」連絡を受ける
-  └─ 損益Excel を soneki フォルダに配置
-  └─ 午前10:00  run_allocate_costs.bat 実行
-       ├─ allocate_actual_hours.py  (再実行)
-       └─ allocate_costs.py
-  └─ 午前10:30  最終結果確認
-  └─ 午前11:00  keiri_YYYYMM.csv を経理部門に提出
-
-【25日〜30日】
-  └─ フィードバック対応（問題があれば）
-  └─ 決算処理への連携</pre>
-</section>
-
-<section id="ch10">
-<h2>第10章　実行チェックシート</h2>
-
-<h3>Stage 1 実行チェックシート（稼働5日以内）</h3>
-<div class="card stage1">
-  <div class="card-title">【YYYYMM月 Stage 1 前半処理】</div>
-  <p>実行日:________　実行者:________</p><br>
-  <strong>【事前準備】</strong>
-  <ul class="checklist">
-    <li>member フォルダ：___名分のファイルを確認（形式: <code>_W太郎.csv</code> または <code>数字_T太郎.csv</code>）</li>
-    <li>kintai フォルダ：HTML ファイルを確認（ファイル名: <code>kintai_YYYYMM.html</code> 形式）</li>
-  </ul><br>
-  <strong>【処理実行】</strong>
-  <ul class="checklist">
-    <li>bin\run_process.bat をダブルクリック</li>
-    <li>対象月を入力（例: 202604）</li>
-    <li>各ステップで Y を入力して実行</li>
-    <li>処理完了メッセージを確認：「すべてのプロセスが正常に完了」</li>
-    <li>実行開始時刻:___:___　実行完了時刻:___:___</li>
-  </ul><br>
-  <strong>【結果確認】</strong>
-  <ul class="checklist">
-    <li>results/raw_data.csv が生成されているか（サイズ &gt; 0 KB）</li>
-    <li>results/YYYYMM_actual_hours.csv が生成されているか</li>
-    <li>工数が全部0でないか（全部0 → member フォルダを確認）</li>
-    <li>合計工数が妥当か（160時間前後/人）</li>
-    <li>エラーメッセージがないか</li>
-  </ul><br>
-  <p><strong>ステータス</strong>：□ Stage 1 完了 → Stage 2 待ち（損益Excel到着待ち）　□ 問題あり → 修正・再実行</p>
-  <p><strong>備考</strong>：</p>
-</div>
-
-<h3>Stage 2 実行チェックシート（損益Excel到着後）</h3>
-<div class="card stage2">
-  <div class="card-title">【YYYYMM月 Stage 2 後半処理】</div>
-  <p>実行日:________　実行者:________</p><br>
-  <strong>【実行条件確認】</strong>
-  <ul class="checklist">
-    <li>経理チームから「損益Excel到着」の連絡を受けたか</li>
-    <li>Stage 1 が完了しているか</li>
-  </ul><br>
-  <strong>【事前準備】</strong>
-  <ul class="checklist">
-    <li>soneki フォルダに損益Excel（.xlsx）があるか（ファイル名に事業年度番号を含む）</li>
-    <li>results/raw_data.csv が存在するか</li>
-  </ul><br>
-  <strong>【処理実行】</strong>
-  <ul class="checklist">
-    <li>bin\run_allocate_costs.bat をダブルクリック</li>
-    <li>対象月を入力（例: 202604）</li>
-    <li>ファイル確認メッセージで「損益データ: ○○.xlsx」が表示されたか</li>
-    <li>Y を入力して実行</li>
-    <li>処理完了メッセージを確認：「すべての処理が正常に完了」</li>
-    <li>実行開始時刻:___:___　実行完了時刻:___:___</li>
-  </ul><br>
-  <strong>【結果確認】（★重要）</strong>
-  <ul class="checklist">
-    <li>keiri/keiri_YYYYMM.csv が生成されているか（サイズ &gt; 0 KB）</li>
-    <li>results/YYYYMM_allocated_costs.csv が生成されているか</li>
-    <li>金額がプラス（正数）か</li>
-    <li>各案件で複数行（労務費＋経費）あるか</li>
-    <li>合計金額が損益Excelと一致するか</li>
-  </ul><br>
-  <strong>【提出準備】</strong>
-  <ul class="checklist">
-    <li>keiri_YYYYMM.csv を確認（経理提出用）</li>
-    <li>メール本文を準備</li>
-    <li>提出先メールアドレスを確認</li>
-  </ul><br>
-  <p><strong>ステータス</strong>：□ 検査完了 → メール送信準備OK　□ 問題あり → 修正・再実行</p>
-  <p><strong>備考</strong>：</p>
-</div>
-</section>
-
-<section id="faq">
-<h2>付録　FAQ（よくある質問）</h2>
-<div class="faq-item">
-  <div class="faq-q">Q1: Stage 1 と Stage 2 をまとめて実行できませんか？</div>
-  <div class="faq-a">いいえ。損益Excel待ちの期間があるため、2段階に分ける必要があります。</div>
-</div>
-<div class="faq-item">
-  <div class="faq-q">Q2: 損益Excelがいつ来るかわかりません</div>
-  <div class="faq-a">経理チームに「損益Excel予定日」を事前に確認することをお勧めします。</div>
-</div>
-<div class="faq-item">
-  <div class="faq-q">Q3: 毎月同じ手順ですか？</div>
-  <div class="faq-a">はい。月号を変えるだけで、手順は同じです。</div>
-</div>
-<div class="faq-item">
-  <div class="faq-q">Q4: Stage 1 で工数エラーが見つかりました。どうしましょう？</div>
-  <div class="faq-a">入力者に修正を依頼します。Stage 1 を月初に実行することで、月内に対応できます。</div>
-</div>
-<div class="faq-item">
-  <div class="faq-q">Q5: 複数月をまとめて処理できますか？</div>
-  <div class="faq-a">1ヶ月ずつの実行を推奨します。</div>
-</div>
-<div class="faq-item">
-  <div class="faq-q">Q6: データのバックアップは？</div>
-  <div class="faq-a">results/ と keiri/ フォルダを定期的にコピーしておくことを推奨します。</div>
-</div>
-<div style="margin-top:32px; padding-top:16px; border-top:1px solid #e2e8f0; color:#64748b; font-size:12px;">
-  <p>このマニュアルに関するご質問・改善提案は、システム部門までお寄せください。</p>
-  <p>最終更新：2026-06-16　／　バージョン：2.1</p>
-</div>
-</section>
-
-</div>
-
-<script>
-const sections = document.querySelectorAll('section[id]');
-const links = document.querySelectorAll('#sidebar nav a');
-const obs = new IntersectionObserver(entries => {
-  entries.forEach(e => {
-    if (e.isIntersecting) {
-      links.forEach(l => l.classList.remove('active'));
-      const a = document.querySelector('#sidebar nav a[href="#' + e.target.id + '"]');
-      if (a) a.classList.add('active');
-    }
-  });
-}, { rootMargin: '-20% 0px -70% 0px' });
-sections.forEach(s => obs.observe(s));
-</script>
+        <h3>実務における 2 段階処理</h3>
+
+        <p>このシステムは、実務のスケジュールに合わせて <strong>2つのバッチを使い分けます</strong>。</p>
+
+    <pre>
+        <code>
+            【月初】稼働5日以内
+              └─ run_process.bat 実行
+                 → 工数集計～検証～配分
+                 → 工数エラーを月初に検出・修正
+                 
+            【15日～25日ごろ】損益Excel到着後
+              └─ run_allocate_costs.bat 実行
+                 → コスト按分（最新損益データ反映）
+                 → 経理データを出力・提出
+        </code>
+    </pre>
+
+        <table>
+            <tr>
+                <th>フェーズ</th>
+                <th>実行時期</th>
+                <th>実行ファイル</th>
+                <th>処理内容</th>
+                <th>所要時間</th>
+            </tr>
+            <tr>
+                <td><strong>Stage 1</strong></td>
+                <td><strong>稼働5日以内</strong></td>
+                <td><code>run_process.bat</code></td>
+                <td>工数集計～検証～配分</td>
+                <td>約5分</td>
+            </tr>
+            <tr>
+                <td><strong>Stage 2</strong></td>
+                <td><strong>損益Excel到着時</strong></td>
+                <td><code>run_allocate_costs.bat</code></td>
+                <td>コスト按分</td>
+                <td>約2分</td>
+            </tr>
+            <tr>
+                <th></th>
+                <th>（実務：15日～25日ごろ）</th>
+                <th></th>
+                <th>（最新損益データ反映）</th>
+                <th></th>
+            </tr>
+        <h3>なぜ 2 段階か？</h3>
+        </table>
+
+        <p>✅ <strong>Stage 1（稼働5日以内）</strong>: 月初の早期段階で実施</p>
+        <li>工数集計</li>
+        <li>勤怠検証（エラーチェック）</li>
+        <li>実績配分計算</li>
+        <li><strong>利点</strong>: 工数エラーを月初に検出、月内に修正可能</li>
+
+        <p>⏳ <strong>損益Excel到着待ち</strong>: 経理チームから損益Excelが到達するまで待機</p>
+        <li>実務では月によって異なる（15日～25日ごろ）</li>
+        <li>決算スケジュール、年度末等の影響あり</li>
+
+        <p>✅ <strong>Stage 2（15日～25日ごろ）</strong>: 経理から損益Excelが到着したら実施</p>
+        <li>最新の損益データを反映したコスト按分</li>
+        <li>経理システム用 CSV 生成（<code>keiri_YYYYMM.csv</code>）</li>
+        <li><strong>利点</strong>: 最新の原価データを反映、正確な按分が可能</li>
+
+        <h3>メリット</h3>
+
+        <p>1. <strong>早期フィードバック</strong>: Stage 1 で工数エラーを月初に検出・修正</p>
+        <p>2. <strong>柔軟な経理連携</strong>: 経理チームのスケジュール変更に対応</p>
+        <p>3. <strong>月内完結</strong>: 稼働5日＋損益Excel到着後で月内に完了</p>
+        <p>4. <strong>エラー削減</strong>: 各段階で確認・修正が可能</p>
+
+        <hr>
+
+        <h3>⚠️ バッチファイル（.bat）の取り扱い注意（必読）</h3>
+
+        <p><code>run_process.bat</code> などのバッチファイルは、画面に日本語のメッセージを表示します。</p>
+        <p>以前は環境によって日本語が文字化けすることがありましたが、現在はすべてのバッチを正しい日本語（CP932）で保存し直したため、<strong>文字化けは発生しません</strong>。</p>
+
+        <p>この状態を保つために、運用上の <strong>重要なお願い</strong> があります。</p>
+
+        <li>❌ <strong>.bat ファイルを直接メモ帳や他のエディタで開いて編集・保存しないでください。</strong></li>
+        <p>エディタで保存し直すと文字コードが変わり、日本語が再び文字化けする原因になります。</p>
+        <li>✅ <strong>バッチの内容を変更したい場合は、システム部門に依頼してください。</strong></li>
+        <p>バッチは <code>make_bat.py</code> という専用ツールから正しい文字コードで再生成する仕組みになっています。修正が必要なときは、このツールで作り直します（集計担当者が手で直す必要はありません）。</p>
+
+        <p>> もし誤って .bat を編集してしまい文字化けした場合も、システム部門が <code>make_bat.py</code> を実行すれば元の正しい状態に戻せます。慌てず連絡してください。</p>
+
+        <hr>
+
+        <h2>第2章 月次作業スケジュール</h2>
+
+        <h3>実務スケジュール（2段階処理）</h3>
+
+        <p>実務では、月初の早期段階と経理部門のスケジュール合わせて、<strong>2つのバッチを使い分けます</strong>。</p>
+
+        <h4>ステップ1: 稼働5日以内（工数集計～検証処理）</h4>
+
+        <p><strong>タイミング</strong>: 月初から5営業日以内に実施</p>
+
+    <pre>
+        <code>
+            実行スクリプト: run_process.bat
+        </code>
+    </pre>
+
+        <p><strong>実行日の目安</strong>（例：2026年4月の場合）:</p>
+    <pre>
+        <code>
+            4月1日（水）～ 4月7日（火）の間で実施
+            目安: 4月2日（木）または 4月3日（金）
+        </code>
+    </pre>
+
+        <p><strong>処理内容</strong>:</p>
+        <p>1. 工数集計（aggregate_hours.py）</p>
+        <p>2. 勤怠検証（verify_hours.py）</p>
+        <p>3. 経理CSV出力（export_keiri_csv.py）</p>
+        <p>4. 実績時間配分（allocate_actual_hours.py）</p>
+        <p>5. 人月計算（calculate_person_months.py）</p>
+
+        <p><strong>所要時間</strong>: 約5分</p>
+
+        <p><strong>出力ファイル</strong>:</p>
+        <li><code>raw_data.csv</code> - 工数集計結果</li>
+        <li><code>YYYYMM_actual_hours.csv</code> - 実績配分結果</li>
+
+        <p><strong>この時点での確認</strong>:</p>
+        <li>✅ 工数エラー検出・修正（月初に対応可能）</li>
+        <li>✅ 勤怠検証（異常値をチェック）</li>
+
+        <hr>
+
+        <h4>ステップ2: 損益Excel到着時（15日～25日ごろ）</h4>
+
+        <p><strong>タイミング</strong>: 経理チームから <strong>損益Excel</strong> が到着した時点</p>
+        <li>実務では月によって異なる（15日～25日ごろ）</li>
+        <li><strong>確認方法</strong>: 経理チームに「損益Excel到着」の連絡を受ける</li>
+
+    <pre>
+        <code>
+            実行スクリプト: run_allocate_costs.bat
+        </code>
+    </pre>
+
+        <p><strong>処理内容</strong>:</p>
+        <p>1. 実績時間配分（allocate_actual_hours.py）再実行</p>
+        <p>2. コスト按分（allocate_costs.py）← <strong>最新の損益データを反映</strong></p>
+
+        <p><strong>所要時間</strong>: 約2分</p>
+
+        <p><strong>出力ファイル</strong>:</p>
+        <li><code>YYYYMM_allocated_costs.csv</code> - 按分詳細結果</li>
+        <li><code>keiri_YYYYMM.csv</code> - <strong>経理提出用</strong> ⭐</li>
+
+        <h3>月によって異なるスケジュール例</h3>
+
+        <h4>例1: 損益Excel が 20日に到着</h4>
+    <pre>
+        <code>
+            4月1日-7日:  run_process.bat 実行
+            4月20日:     run_allocate_costs.bat 実行 → 経理へ提出
+        </code>
+    </pre>
+
+        <h4>例2: 損益Excel が 25日に到着</h4>
+    <pre>
+        <code>
+            4月1日-7日:  run_process.bat 実行
+            4月25日:     run_allocate_costs.bat 実行 → 経理へ提出
+        </code>
+    </pre>
+
+        <h4>例3: 損益Excel が 15日に到着（早期）</h4>
+    <pre>
+        <code>
+            4月1日-7日:  run_process.bat 実行
+            4月15日:     run_allocate_costs.bat 実行 → 経理へ提出
+        </code>
+    </pre>
+
+        <h4>例4: 損益Excel が 23日に到着</h4>
+    <pre>
+        <code>
+            4月1日-7日:  run_process.bat 実行
+            4月23日:     run_allocate_costs.bat 実行 → 経理へ提出
+        </code>
+    </pre>
+
+        <hr>
+
+        <h2>第3章 事前準備（集計処理前）</h2>
+
+        <h3>Step 1: ファイルの準備確認</h3>
+
+        <h4>✅ Stage 1 実行前に確認</h4>
+
+        <p>1. <strong>従業員の工数ファイル</strong> (member フォルダ)</p>
+        <li>全従業員のCSVファイルが揃っているか</li>
+        <li>ファイル名形式: <code>_W太郎.csv</code> または <code>1_T太郎.csv</code></li>
+        <li>月初までに最新データが入力されているか</li>
+
+        <p>2. <strong>勤怠データ</strong> (kintai フォルダ)</p>
+        <li>HTML形式の勤怠ファイルが置かれているか</li>
+        <li>ファイル名例: <code>kintai_202604.html</code></li>
+        <li>必須項目：従業員名、実働時間</li>
+
+        <h4>✅ Stage 2 実行前に確認</h4>
+
+        <p>3. <strong>損益Excel</strong> (soneki フォルダ)</p>
+        <li>Excelファイル（XLSX形式）が置かれているか</li>
+        <li>ファイル名例: <code>soneki_202604.xlsx</code></li>
+        <li><strong>重要</strong>: 経理チームから「損益Excel到着」通知があったか確認</li>
+        <li>シート名が月名（例：「4月」）になっているか</li>
+
+        <h3>Step 2: 環境設定ファイル（env）の作成・確認</h3>
+
+        <p>環境設定ファイル（env）は、システムがデータの置き場所を知るための設定ファイルです。</p>
+        <p><strong>ファイル場所</strong>: bin フォルダ内（<code>bin\env</code>、拡張子なし）</p>
+
+        <h4>初回のみ：<code>make_env.py</code> で env を作成</h4>
+
+        <p>env は <strong>手作業で作らず、<code>make_env.py</code> を使って作成します</strong>。</p>
+        <p>手作業だと行のズレや文字化けが起きやすいため、専用ツールで正しく生成します。</p>
+
+        <p><strong>作成手順（初回のみ。一度作れば毎月は不要）</strong>:</p>
+
+        <p>1. エクスプローラで bin フォルダを開く（例: <code>C:\data\project\bin\</code>）</p>
+        <p>2. アドレスバーに <code>cmd</code> と入力して Enter（その場所でコマンド画面が開く）</p>
+        <p>3. 次のように入力して Enter</p>
+
+    <pre>
+        <code>
+               python make_env.py
+        </code>
+    </pre>
+
+        <p>> 💡 <strong><code>python</code> で動かない（「Microsoft Store が開く」「'python' は認識されません」等）場合は <code>py</code> に読み替えてください</strong>（例: <code>py make_env.py</code>）。</p>
+        <p>> これは Microsoft Store 版のダミー <code>python</code> が原因のことがあります。以降このマニュアルに出てくる手入力の <code>python ○○.py</code> も同様に <code>py ○○.py</code> で実行できます。</p>
+        <p>> なお、<strong>バッチ（<code>run_process.bat</code> / <code>run_allocate_costs.bat</code> / <code>run_all.bat</code>）は <code>py</code>／<code>python</code> を自動判定するため、この読み替えは不要</strong>です（バッチ実行時の手当ては要りません）。</p>
+
+        <p>4. 各項目を順に聞かれます。<strong>何も入力せず Enter を押すと、表示されている既定値（[ ] の中身）がそのまま使われます</strong>。通常はすべて Enter で問題ありません。</p>
+
+    <pre>
+        <code>
+               ======================================================
+                 env(環境設定ファイル)生成 - Enterで既定値を採用
+               ======================================================
+               プロジェクトルート(絶対パス) [C:\data\project]: （Enter）
+               bin サブディレクトリ [\bin]: （Enter）
+               member サブディレクトリ [\member]: （Enter）
+               kintai サブディレクトリ [\kintai]: （Enter）
+               list サブディレクトリ [\list]: （Enter）
+               soneki サブディレクトリ [\soneki]: （Enter）
+               results サブディレクトリ [\results]: （Enter）
+               1人日の標準労働時間(時間) [7.5]: （Enter）
+        </code>
+    </pre>
+
+        <p>5. 最後に「生成完了: env (CP932, 8行)」と表示されれば成功です。</p>
+
+        <p><strong>よく使うオプション</strong>:</p>
+
+        <table>
+            <tr>
+                <th>やりたいこと</th>
+                <th>入力するコマンド</th>
+            </tr>
+            <tr>
+                <td>対話入力で作る（推奨）</td>
+                <td><code>python make_env.py</code></td>
+            </tr>
+            <tr>
+                <td>ルートだけ指定して一括作成</td>
+                <td><code>python make_env.py --root C:\data\project</code></td>
+            </tr>
+            <tr>
+                <td>既存の env を上書きし直す</td>
+                <td><code>python make_env.py --force</code></td>
+            </tr>
+            <tr>
+                <th>フォルダ未作成のまま作る</th>
+                <th><code>python make_env.py --no-check</code></th>
+            </tr>
+        </table>
+
+        <h4>2回目以降：env の確認だけ</h4>
+
+        <p>一度 env を作成済みであれば、毎月の作り直しは不要です。</p>
+        <p><code>bin\env</code> ファイルが存在することだけ確認してください。フォルダ構成（保存場所）を変えた場合のみ、<code>python make_env.py --force</code> で作り直します。</p>
+
+        <hr>
+
+        <h3>Step 3: 案件マスタ（inc_list）の確認・再生成</h3>
+
+        <p>工数集計では、案件ごとの <strong>内外製区分（N/G/K/y）</strong> と <strong>品区</strong> を <code>list\<期>_inc_list.csv</code> から読み込みます（列: <code>inc_num, naigaikubun, hinku</code>）。これは原価按分の <strong>対象判定・配分に直結する重要なマスタ</strong> です。</p>
+
+        <p>> ⚠️ <strong>重要</strong>: <code><期>_inc_list.csv</code> は <strong>手で編集しないでください</strong>。</p>
+        <p>> このCSVは <code>インシデント管理表.xlsx</code> から <strong>自動生成される派生ファイル</strong> です。直接編集しても、次回の再生成で上書きされて消えます。</p>
+
+        <h4>マスタの大元は「インシデント管理表.xlsx」</h4>
+
+        <li>案件マスタの <strong>正（真実）</strong> は、プロジェクトルート直下の <strong><code>インシデント管理表.xlsx</code></strong> です。</li>
+        <li>ファイル内の各 <strong>「◆XXX期」シート</strong>（例: <code>◆189期</code>）が各事業年度の原本です。</li>
+        <li>このシートの <strong>ｲﾝｼﾃﾞﾝﾄ№ / ＮＧＫｙ / 品区</strong> の3列から、<code><期>_inc_list.csv</code> が作られます。</li>
+
+        <h4>案件の追加・変更があったときの手順</h4>
+
+        <p>案件マスタを変更する必要があるとき（新しい案件の追加、内外製区分の修正など）は、次の順で作業します。<strong>通常はシステム部門またはマスタ管理者が実施します。</strong></p>
+
+        <p>1. <strong><code>インシデント管理表.xlsx</code> を Excel で開いて編集</strong> する</p>
+        <p>（該当する「◆XXX期」シートに行を追加・修正）</p>
+        <p>2. bin フォルダでコマンド画面を開き、次を実行する</p>
+
+    <pre>
+        <code>
+               cd bin
+               python make_inc_list.py --env env
+        </code>
+    </pre>
+
+        <li>これで <strong>全期分</strong> の <code>list\<期>_inc_list.csv</code> がまとめて再生成されます。</li>
+        <li>特定の期だけ作り直したい場合は <code>--period 189</code> のように期番号を付けます。</li>
+
+    <pre>
+        <code>
+                 python make_inc_list.py --env env --period 189
+        </code>
+    </pre>
+
+        <p>3. 「出力完了: ...（N件, シート=◆XXX期）」と表示されれば成功です。</p>
+
+        <h4>エラーが出たとき（書き込まれずに中断します）</h4>
+
+        <p><code>インシデント管理表.xlsx</code> に不備があると、<code>make_inc_list.py</code> は <strong>CSVを書き込まずに中断</strong> し、問題箇所を一覧表示します。検出される主なエラーは次のとおりです。</p>
+
+        <li><strong>№・ＮＧＫｙ・品区のいずれかが空欄</strong>（行番号付きで表示）</li>
+        <li><strong>ＮＧＫｙが値域外</strong>（許容は <code>N</code>, <code>G</code>, <code>K</code>, <code>y</code> のみ）</li>
+        <li><strong>同じ№で内外製区分・品区が矛盾</strong>している（前回行と今回行の値が違う）</li>
+
+        <p>表示された行番号を手がかりに <strong>xlsx 側を直してから、もう一度コマンドを実行</strong> してください。エラーが残っている間は、既存の <code>inc_list.csv</code> は変更されません（安全に何度でも再実行できます）。</p>
+
+        <p>> 📌 <strong>補足</strong>: <code>インシデント管理表.xlsx</code> に画像が貼られていても読み込めるように改善済みです（環境によっては以前うまく開けないことがありましたが、現在は問題ありません）。</p>
+
+        <p>> 📌 <strong>補足（ダッシュボードの案件名）</strong>: 上記の <code>インシデント管理表.xlsx</code> からは、<code>inc_list.csv</code> とは別に <strong><code>list\inc_name_list.csv</code>（インシデント番号→案件名, CP932）</strong> も派生生成され、配布物に同梱されます。ダッシュボードのデータ再生成（第11章, <code>python bin\generate_dashboard_data.py</code>）はこのCSVから案件名を読み込むため、<strong><code>インシデント管理表.xlsx</code> を持たない配布版でも案件名込みで再生成できます</strong>。</p>
+
+        <hr>
+
+        <h2>第4章 Stage 1 処理の実行（稼働5日以内）</h2>
+
+        <h3>Step 1: 集計ツールの起動</h3>
+
+        <h4>Windows での実行方法（推奨）</h4>
+
+        <p><strong>実行するバッチ: <code>run_process.bat</code></strong></p>
+
+        <p>1. エクスプローラで以下のフォルダを開く</p>
+    <pre>
+        <code>
+               C:\data\project\bin\
+        </code>
+    </pre>
+
+        <p>2. <strong><code>run_process.bat</code></strong> をダブルクリック</p>
+
+        <p>3. 以下の画面が表示される</p>
+    <pre>
+        <code>
+               ======================================================
+                 前半処理（工数集計～検証～配分）
+               ======================================================
+               
+               対象の月号を入力してください（例: 202604):
+        </code>
+    </pre>
+
+        <p>4. 対象月を入力（例: <code>202604</code>）して Enter キーを押す</p>
+
+        <p>5. 各ステップで確認メッセージが表示される</p>
+    <pre>
+        <code>
+               [STEP 1] 工数集計データの処理（aggregate_hours.py）
+               工数集計データの処理を実行しますか?
+               Yes(Y) / No(N): Y
+        </code>
+    </pre>
+
+        <li><strong>Y</strong> を入力して Enter → 処理実行</li>
+        <li><strong>N</strong> を入力 → このステップをスキップ</li>
+
+        <p>6. 以下のような進行状況が表示される</p>
+    <pre>
+        <code>
+               [STEP 1] 工数集計データの処理...✓
+               [STEP 2] 勤怠データ検証...✓
+               [STEP 3] 経理CSV出力...✓
+               [STEP 4] 実績時間配分...✓
+               [STEP 5] 人月計算...✓
+        </code>
+    </pre>
+
+        <p>7. 処理完了メッセージ</p>
+    <pre>
+        <code>
+               ======================================================
+                 すべてのプロセスが正常に完了しました。
+               ======================================================
+        </code>
+    </pre>
+
+        <p><strong>出力ファイル確認</strong>:</p>
+    <pre>
+        <code>
+            results/
+            ├── raw_data.csv              ← 工数集計結果（確認用）
+            └── 202604_actual_hours.csv   ← 実績配分結果
+        </code>
+    </pre>
+
+        <hr>
+
+        <h2>第5章 Stage 2 処理の実行（損益Excel到着後）</h2>
+
+        <h3>Step 1: 準備確認</h3>
+
+        <p><strong>実行前チェック</strong>:</p>
+        <li>[ ] 経理チームから「損益Excel到着」の連絡を受けたか</li>
+        <li>[ ] soneki フォルダに Excel ファイルが置かれているか</li>
+        <li>[ ] Stage 1 が正常に完了しているか</li>
+
+        <h3>Step 2: コスト按分ツールの起動</h3>
+
+        <p><strong>実行するバッチ: <code>run_allocate_costs.bat</code></strong></p>
+
+        <p>1. エクスプローラで以下のフォルダを開く</p>
+    <pre>
+        <code>
+               C:\data\project\bin\
+        </code>
+    </pre>
+
+        <p>2. <strong><code>run_allocate_costs.bat</code></strong> をダブルクリック</p>
+
+        <p>3. 以下の画面が表示される</p>
+    <pre>
+        <code>
+               ======================================================
+                 コスト按分・経理データ処理
+               ======================================================
+               
+               対象の月号を入力してください（例: 202604):
+        </code>
+    </pre>
+
+        <p>4. 対象月を入力（例: <code>202604</code>）して Enter キーを押す</p>
+
+        <p>5. ファイル確認画面が表示される</p>
+    <pre>
+        <code>
+               --- ファイルの存在確認 ---
+               
+               [OK] 確認: 202604_raw_data.csv
+               [OK] 確認: 勤怠データ
+               [OK] 確認: 原価データ 【soneki_202604.xlsx】
+               
+               ======================================================
+               発見された損益データ: soneki_202604.xlsx
+               ======================================================
+               
+               この損益データを使用して按分処理を開始しますか?
+               Yes(Y) / No(N): Y
+        </code>
+    </pre>
+
+        <p>6. <strong>Y</strong> を入力して Enter</p>
+
+        <p>7. 処理が実行される</p>
+    <pre>
+        <code>
+               [STEP 1] 実績時間配分 (allocate_actual_hours.py) を実行中...
+               [STEP 2] コスト按分 (allocate_costs.py) を実行中...
+               
+               ======================================================
+                 すべての処理が正常に完了しました。
+               ======================================================
+        </code>
+    </pre>
+
+        <p><strong>出力ファイル確認</strong>:</p>
+    <pre>
+        <code>
+            keiri/
+            └── keiri_202604.csv          ← ⭐ 経理提出用（重要）
+            
+            results/
+            └── 202604_allocated_costs.csv ← コスト按分詳細
+        </code>
+    </pre>
+
+        <hr>
+
+        <h2>第6章 結果の確認</h2>
+
+        <p>> 💡 集計・按分結果はグラフでも確認できます。ブラウザで見られる「ダッシュボード」の使い方は <strong>第11章</strong> を参照してください。</p>
+
+        <h3>Stage 1 完了後の確認</h3>
+
+        <h4>📊 <code>raw_data.csv</code> - 工数集計結果</h4>
+
+        <p><strong>目的</strong>: 従業員ごとの案件別工数</p>
+
+        <p><strong>確認事項</strong>:</p>
+        <li>[ ] すべての従業員が含まれているか</li>
+        <li>[ ] 工数がすべて 0 になっていないか（データ欠損チェック）</li>
+        <li>[ ] 合計工数が妥当か（例：20営業日 × 8時間 = 160時間付近）</li>
+
+        <p><strong>ファイルの見方</strong>:</p>
+    <pre>
+        <code>
+            【最初の3行の例】
+            月,案件名,内外製,品区,太郎,花子,次郎
+            2026/04,プロジェクトA,N,code1,160,140,120
+            2026/04,プロジェクトB,G,code2,80,100,90
+        </code>
+    </pre>
+
+        <p><strong>判断基準</strong>:</p>
+        <li>各従業員の欄に数値が入っている → OK</li>
+        <li>全部 0 → NG（ファイルが見つからない可能性）</li>
+        <li>NaN や #VALUE! → エラー</li>
+
+        <hr>
+
+        <h3>Stage 2 完了後の確認</h3>
+
+        <h4>📊 <code>keiri_YYYYMM.csv</code> - 経理出力（最重要）</h4>
+
+        <p><strong>目的</strong>: 経理システムへの入力用データ</p>
+
+        <p><strong>確認事項</strong>:</p>
+        <li>[ ] ファイルが生成されているか</li>
+        <li>[ ] 案件名が正確か</li>
+        <li>[ ] 金額が妥当か</li>
+
+        <p><strong>ファイルの見方</strong>:</p>
+    <pre>
+        <code>
+            年月,案件コード,案件名,原価区分,金額
+            2026/04,PRJ001,プロジェクトA,労務費,450000
+            2026/04,PRJ001,プロジェクトA,経費,50000
+            2026/04,PRJ002,プロジェクトB,労務費,280000
+        </code>
+    </pre>
+
+        <p><strong>判断基準</strong>:</p>
+        <li>金額がプラス（正数）である → OK</li>
+        <li>各案件で複数行（労務費+経費）ある → OK</li>
+        <li>合計金額が損益Excel の値と一致 → OK</li>
+
+        <hr>
+
+        <h2>第7章 トラブルシューティング</h2>
+
+        <h3>よくあるエラーと対応方法</h3>
+
+        <h4>❌ エラー1: 「ファイルが見つかりません」</h4>
+
+        <p><strong>症状</strong>: 処理中に以下のメッセージが出て止まる</p>
+    <pre>
+        <code>
+            エラー: raw_data.csv が見つかりません
+        </code>
+    </pre>
+
+        <p><strong>原因</strong>: 工数ファイルが member フォルダに入っていない、または Stage 1 が実行されていない</p>
+
+        <p><strong>対応方法</strong>:</p>
+        <p>1. <code>member</code> フォルダをチェック</p>
+        <p>2. <code>_W従業員名.csv</code> 形式のファイルがあるか確認</p>
+        <p>3. Stage 1 が完了しているか確認</p>
+        <p>4. もう一度実行</p>
+
+        <hr>
+
+        <h4>❌ エラー2: 「損益Excelファイルが読めません」</h4>
+
+        <p><strong>症状</strong>:</p>
+    <pre>
+        <code>
+            Excelファイル 'soneki.xlsx' が読み込めませんでした
+        </code>
+    </pre>
+
+        <p><strong>原因</strong>: 損益ファイル（Excel）が見つからない、または形式が違う</p>
+
+        <p><strong>対応方法</strong>:</p>
+        <p>1. <code>soneki</code> フォルダをチェック</p>
+        <p>2. <code>.xlsx</code> ファイルがあるか確認（.xls や .xlsm ではダメ）</p>
+        <p>3. Excelで開いて、シート名が「4月」など月名になっているか確認</p>
+        <p>4. 経理部門に「損益Excel到着」の連絡がされているか確認</p>
+
+        <hr>
+
+        <h4>❌ エラー3: 出力ファイルが空または 0 になっている</h4>
+
+        <p><strong>症状</strong>:</p>
+    <pre>
+        <code>
+            raw_data.csv は生成されたが、全部 0 になっている
+        </code>
+    </pre>
+
+        <p><strong>原因</strong>: 従業員の工数ファイルが見つからないか、形式が違う</p>
+
+        <p><strong>対応方法</strong>:</p>
+        <p>1. <code>member</code> フォルダ内のCSVファイルを1つ開く</p>
+        <p>2. Excel で見たときに、以下のような形式か確認</p>
+    <pre>
+        <code>
+               日付,タスク名,工数
+               44000,テスト_001,8
+               44001,テスト_002,8
+        </code>
+    </pre>
+        <p>3. ファイル名が <code>_W</code> で始まるか、または <code>数字_T</code> で始まるか確認</p>
+        <p>4. 形式が違う場合は、担当者に修正を依頼</p>
+
+        <hr>
+
+        <h4>⚠️ 警告: 「member CSV をエンコード不正のためスキップしました」</h4>
+
+        <p><strong>症状</strong>: Stage 1（工数集計）の途中で、次のような警告がまとめて表示される</p>
+
+    <pre>
+        <code>
+            【警告】以下の member CSV はエンコード不正のためスキップしました（集計から除外）
+              - _W太郎.csv
+        </code>
+    </pre>
+
+        <p><strong>原因</strong>: その従業員の工数ファイルが <strong>CP932（Shift-JIS）以外</strong>（例: UTF-8）で保存されている</p>
+
+        <p><strong>以前との違い</strong>:</p>
+        <li>以前は、1つでもエンコードの違うファイルがあると <strong>文字化けで処理全体が止まって</strong> いました。</li>
+        <li>現在は、<strong>該当ファイルだけを除外し、ファイル名を警告に出して処理を継続</strong> します。残りの従業員は問題なく集計されます。</li>
+
+        <p><strong>対応方法</strong>:</p>
+        <p>1. 警告に表示されたファイルを、保存し直してもらう（<strong>文字コードを Shift-JIS / CP932 に</strong>）</p>
+        <li>Excel から「CSV（コンマ区切り）」で保存すれば通常 CP932 になります</li>
+        <li>メモ帳の場合は「名前を付けて保存」で文字コードを <strong>ANSI</strong> にする</li>
+        <p>2. 直したファイルを member フォルダに置き直し、<strong>Stage 1 を再実行</strong></p>
+        <p>3. スキップされた従業員は集計に <strong>含まれていない</strong> ため、必ず直して入れ直すこと</p>
+
+        <p>> 🔎 <strong>検収・チェックを厳密にしたいとき</strong>: 担当者がコマンドで実行する場合、<code>aggregate_hours.py</code> に <strong><code>--strict</code></strong> を付けると、エンコード不正ファイルを <strong>スキップせずエラーで停止</strong> します（見落とし防止用）。通常運用のバッチは従来どおりスキップ＋警告で継続します。</p>
+
+        <hr>
+
+        <h4>⚠️ 警告: 「工数が過大／過小です（単位をご確認ください）」</h4>
+
+        <p><strong>症状</strong>: Stage 1 で、次のような工数の <strong>単位（分／時間）の取り違い</strong> を疑う警告が出る</p>
+
+    <pre>
+        <code>
+            【警告】単位の取り違いが疑われる入力があります:
+              ...（日合計が 24h を超える、または月合計が 1h 未満 等）
+        </code>
+    </pre>
+
+        <p><strong>原因</strong>: 工数は <strong>分単位</strong> で入力する想定ですが、誤って <strong>「時間」で入力</strong>（または分のつもりが桁違い）している可能性があります。</p>
+        <li><strong>日合計が 24 時間を超える</strong> → 過大入力の疑い</li>
+        <li><strong>月合計が 1 時間未満（かつ 0 でない）</strong> → 「時間」を分として扱い縮小された疑い</li>
+
+        <p><strong>重要</strong>: この警告は <strong>出力をブロックしません</strong>（処理は最後まで進みます）。あくまで気づきのための注意喚起です。</p>
+
+        <p><strong>対応方法</strong>:</p>
+        <p>1. 警告に出た従業員・日付の入力値を確認</p>
+        <p>2. 単位の取り違いがあれば修正してもらい、<strong>Stage 1 を再実行</strong></p>
+        <p>3. 妥当な値（深夜作業等で実際に大きい等）であればそのまま進めてよい</p>
+
+        <hr>
+
+        <h4>❌ エラー4: 「環境設定ファイルが見つかりません」</h4>
+
+        <p><strong>症状</strong>:</p>
+    <pre>
+        <code>
+            設定ファイル 'project.env' が見つかりません
+        </code>
+    </pre>
+
+        <p><strong>原因</strong>: env ファイルが無い、またはパスが違う</p>
+
+        <p><strong>対応方法</strong>:</p>
+        <p>1. bin フォルダをチェック</p>
+        <p>2. <code>env</code> というファイル（拡張子なし）があるか確認</p>
+        <p>3. ない場合は、bin フォルダで <code>python make_env.py</code> を実行して作成する</p>
+        <p>（作成手順は「第3章 Step 2: 環境設定ファイル（env）の作成・確認」を参照）</p>
+        <p>4. 既に env があるのにエラーが出る場合は、<code>python make_env.py --force</code> で作り直す</p>
+
+        <hr>
+
+        <h4>❌ エラー5: 「'python' は内部コマンドまたは外部コマンドとして認識されていません」</h4>
+
+        <p><strong>症状</strong>: バッチファイルを起動した直後に上記メッセージが出て終了する</p>
+
+        <p><strong>原因</strong>: PC に <code>python</code> コマンドが PATH 登録されていない（<code>py</code> ランチャーのみの環境）</p>
+
+        <p><strong>対応方法</strong>:</p>
+        <li><code>run_process.bat</code> / <code>run_allocate_costs.bat</code> / <code>run_all.bat</code> は <code>python</code> が見つからない場合に <strong>自動的に <code>py</code> コマンドで再試行</strong> します。通常はそのまま処理が続きます。</li>
+        <li>それでも失敗する場合は、Python 公式サイトから Python をインストールし、「Add Python to PATH」にチェックを入れて再インストールしてください。</li>
+
+        <hr>
+
+        <h4>⚠️ 警告: 「工数の合計が実働時間と異なります」</h4>
+
+        <p><strong>症状</strong>:</p>
+    <pre>
+        <code>
+            verify_YYYYMM.csv に警告が記録されている
+        </code>
+    </pre>
+
+        <p><strong>原因</strong>: 従業員の入力工数と、勤怠システムの実働時間に差がある</p>
+
+        <p><strong>対応方法</strong>:</p>
+        <li><strong>軽度の差異（±1時間以内）</strong>: 許容範囲 → そのまま進める</li>
+        <li><strong>大きな差異（±5時間以上）</strong>: 当人に確認 → 修正後に再実行</li>
+        <li>判断できない場合は、管理者に報告</li>
+
+        <hr>
+
+        <h2>第8章 結果提出のフロー</h2>
+
+        <h3>Stage 2 完了後の確認チェック</h3>
+
+        <p><code>run_allocate_costs.bat</code> 完了後、以下のファイルが生成されたことを確認：</p>
+
+    <pre>
+        <code>
+            【確認チェック】
+            
+            □ keiri/ フォルダ内に以下ファイルがあるか？
+              □ keiri_202604.csv ← ⭐ 経理提出用（最重要）
+            
+            □ results/ フォルダ内に以下ファイルがあるか？
+              □ 202604_allocated_costs.csv
+            
+            □ ファイルサイズが 0 KB でないか？
+            
+            □ ファイルの最終更新日時が本日か？
+              （右クリック → プロパティで確認）
+        </code>
+    </pre>
+
+        <h3>提出ファイル（最終版）</h3>
+
+        <h4>🔴 必須ファイル</h4>
+
+    <pre>
+        <code>
+            keiri/keiri_202604.csv
+        </code>
+    </pre>
+
+        <li><strong>用途</strong>: 経理システムへの入力用</li>
+        <li><strong>提出先</strong>: 経理部門</li>
+        <li><strong>フォーマット</strong>: CSV（CP932 エンコーディング）</li>
+
+        <h4>📋 参考ファイル（不要であれば省略可）</h4>
+
+    <pre>
+        <code>
+            results/raw_data.csv
+            results/202604_allocated_costs.csv
+        </code>
+    </pre>
+
+        <li><strong>用途</strong>: 月次レビュー、データ検証用</li>
+        <li><strong>提出先</strong>: プロジェクト管理者、品質管理</li>
+
+        <h3>提出方法</h3>
+
+        <h4>ステップ1: ファイル確認</h4>
+
+    <pre>
+        <code>
+            C:\data\project\keiri\ フォルダを開く
+              → keiri_202604.csv が存在することを確認
+        </code>
+    </pre>
+
+        <h4>ステップ2: メール提出</h4>
+
+        <p><strong>メール件名</strong>:</p>
+    <pre>
+        <code>
+            【202604月次集計完了報告】工数集計・按分結果
+        </code>
+    </pre>
+
+        <p><strong>メール本文テンプレート</strong>:</p>
+    <pre>
+        <code>
+            いつもお疲れ様です。
+            
+            2026年4月の工数集計・按分処理が完了いたしました。
+            
+            【処理実行日】
+              Stage 1（前半処理）: 2026-04-03
+              Stage 2（後半処理）: 2026-04-20
+            
+            【処理内容】
+              ✓ 工数集計: 完了
+              ✓ 勤怠検証: 完了
+              ✓ 実績配分: 完了
+              ✓ コスト按分: 完了
+              ✓ 人月計算: 完了
+            
+            【集計結果サマリー】
+              - 従業員数: 15名
+              - 案件数: 8件
+              - 合計原価: 1,450,000円
+              - エラー/警告: なし
+            
+            【添付ファイル】
+              - keiri_202604.csv (経理データ ⭐必須)
+              - raw_data.csv (工数集計結果 参考)
+            
+            ご確認のほどよろしくお願いいたします。
+        </code>
+    </pre>
+
+        <hr>
+
+        <h2>第9章 月次処理カレンダー</h2>
+
+        <h3>2段階処理スケジュール（毎月繰り返し）</h3>
+
+    <pre>
+        <code>
+            【20日】前月終了
+              └─ 前月の決算処理完了
+            
+            【月初】稼働5日以内 ★ Stage 1 実行日
+              └─ 午前09:00 工数入力締切確認
+              └─ 午前10:00 run_process.bat 実行
+                   ├─ aggregate_hours.py
+                   ├─ verify_hours.py
+                   ├─ allocate_actual_hours.py
+                   └─ calculate_person_months.py
+              └─ 午前10:30 結果確認
+              └─ 午前11:00 工数エラー確認・報告
+            
+            【5日～15日】待機期間
+              └─ 経理チームが損益Excelを準備中
+              └─ 工数エラーがあれば修正依頼
+            
+            【15日～25日ごろ】★ Stage 2 実行日
+              └─ 経理チームから「損益Excel到着」連絡を受ける
+              └─ 午前09:00 損益Excelをチェック
+              └─ 午前10:00 run_allocate_costs.bat 実行
+                   ├─ allocate_actual_hours.py（再実行）
+                   └─ allocate_costs.py
+              └─ 午前10:30 最終結果確認
+              └─ 午前11:00 keiri_YYYYMM.csv を経理部門に提出
+            
+            【25日～30日】
+              └─ フィードバック対応（問題があれば）
+              └─ 決算処理への連携
+        </code>
+    </pre>
+
+        <hr>
+
+        <h2>第10章 実行チェックシート</h2>
+
+        <h3>Stage 1 実行チェックシート（稼働5日以内）</h3>
+
+    <pre>
+        <code>
+            【202604月 Stage 1 前半処理】
+            
+            実行日: 2026-04-03
+            実行者: ___________
+            
+            【事前準備】
+            □ member フォルダ: ___名分のファイルを確認
+              └─ 形式: _W太郎.csv または 数字_T太郎.csv
+            □ kintai フォルダ: HTML ファイルを確認
+              └─ ファイル名: kintai_202604.html 形式
+            
+            【処理実行】
+            □ bin\run_process.bat をダブルクリック
+            □ 対象月を入力: 202604
+            □ 各ステップで Y を入力して実行
+            □ 処理完了メッセージを確認: 「すべてのプロセスが正常に完了」
+            □ 実行開始時刻: ___:___
+            □ 実行完了時刻: ___:___
+            
+            【結果確認】
+            □ results/raw_data.csv が生成されているか
+              - ファイルサイズ: ___ KB（0 KB でない ✓）
+              - 従業員数: ___名
+              - 案件数: ___件
+              - 最大工数: ___ 時間
+            
+            □ results/202604_actual_hours.csv が生成されているか
+              - ファイルサイズ: ___ KB（0 KB でない ✓）
+            
+            【問題チェック】
+            □ エラーメッセージがないか
+              □ なし → OK
+              □ あり → 内容: ________________
+                       対応: ________________
+            
+            □ 工数が全部 0 でないか
+              □ OK（データあり）
+              □ NG（データなし）→ member フォルダを確認
+            
+            □ 合計工数が妥当か
+              □ OK（160時間前後）
+              □ NG（おかしい） → 対応: ________________
+            
+            【ステータス】
+            □ Stage 1 完了 → Stage 2 待ち（損益Excel到着待ち）
+            □ 問題あり → 修正・再実行
+            
+            【備考】
+            _________________________________
+            _________________________________
+        </code>
+    </pre>
+
+        <hr>
+
+        <h3>Stage 2 実行チェックシート（損益Excel到着後）</h3>
+
+    <pre>
+        <code>
+            【202604月 Stage 2 後半処理】
+            
+            実行日: 2026-04-20
+            実行者: ___________
+            
+            【実行条件確認】
+            □ 経理チームから「損益Excel到着」の連絡を受けたか
+              □ はい → 次へ
+              □ いいえ → 経理部門に確認
+            □ Stage 1 が完了しているか
+              □ 完了済み ✓
+              □ 未実施 → Stage 1 から再実行
+            
+            【事前準備】
+            □ soneki フォルダに損益 Excel ファイルがあるか
+              - ファイル名: soneki_202604.xlsx
+              - ファイル存在: □ あり / □ なし
+            
+            □ results/raw_data.csv が存在するか
+              □ あり ✓
+              □ なし → Stage 1 から再実行
+            
+            【処理実行】
+            □ bin\run_allocate_costs.bat をダブルクリック
+            □ 対象月を入力: 202604
+            □ ファイル確認メッセージが表示される
+              └─ 「発見された損益データ: soneki_202604.xlsx」
+            □ Y を入力して実行
+            □ 処理完了メッセージを確認: 「すべての処理が正常に完了」
+            □ 実行開始時刻: ___:___
+            □ 実行完了時刻: ___:___
+            
+            【結果確認】（★重要）
+            □ keiri/keiri_202604.csv が生成されているか
+              - ファイルサイズ: ___ KB（0 KB でない ✓）
+              - 案件数: ___件
+              - 合計金額: ___,___円
+            
+            □ results/202604_allocated_costs.csv が生成されているか
+              - ファイルサイズ: ___ KB（0 KB でない ✓）
+            
+            【品質チェック】
+            □ keiri_202604.csv の内容確認
+              - 金額がプラス（正数）か: □ はい / □ いいえ
+              - 各案件で複数行（労務費+経費）あるか: □ はい / □ いいえ
+              - 合計金額が損益Excelと一致するか: □ はい / □ いいえ
+            
+            □ 按分比率の確認
+              - 按分比率の合計が 1.0 に近いか（0.95～1.05）: □ OK / □ 異常
+            
+            【問題チェック】
+            □ エラーメッセージがないか
+              □ なし → OK
+              □ あり → 内容: ________________
+                       対応: ________________
+            
+            □ ファイルが空（0 KB）でないか
+              □ OK（データあり）
+              □ NG（データなし）→ soneki フォルダ確認
+            
+            【提出準備】
+            □ keiri_202604.csv を確認（経理提出用）
+            □ メール本文を準備
+            □ 提出先メールアドレスを確認
+            □ メール送信予定時刻: ___:___
+            
+            【ステータス】
+            □ 検査完了 → メール送信準備OK
+            □ 問題あり → 修正・再実行
+            
+            【備考】
+            _________________________________
+            _________________________________
+        </code>
+    </pre>
+
+        <hr>
+
+        <h2>第11章 ダッシュボードで結果を可視化する</h2>
+
+        <p>集計・按分の結果（<code>results/</code> のCSV）を、ブラウザで見られるグラフ画面（ダッシュボード）で確認できます。<strong>インターネット接続もサーバも不要</strong>で、ファイルをダブルクリックするだけで開けます。</p>
+
+        <h3>開き方</h3>
+
+        <p>1. <code>dashboard</code> フォルダの中の <strong><code>index.html</code></strong> をダブルクリック（既定のブラウザで開きます）。</p>
+        <p>2. グラフが表示されます。閉じるときはブラウザのタブを閉じるだけです。</p>
+
+        <h3>最新データに更新する（集計後に実行）</h3>
+
+        <p>Stage 1／Stage 2 を実行して <code>results/</code> のCSVが更新されたら、ダッシュボードのデータも作り直します。</p>
+
+    <pre>
+        <code>
+            cd bin
+            python generate_dashboard_data.py
+        </code>
+    </pre>
+
+        <li>これで <code>results/</code> の全CSVを読み込み、<code>dashboard/data/data.js</code> を再生成します。</li>
+        <li>💡 <code>python</code> で動かない場合は <code>py generate_dashboard_data.py</code> に読み替えてください（Microsoft Store 版のダミー python が原因のことがあります。詳細は第3章 Step 2 の補足）。</li>
+        <li>実行後にダッシュボード（<code>index.html</code>）を再読み込み（F5）すると最新の内容になります。</li>
+        <li>⚠️ <code>dashboard/data/data.js</code> は<strong>自動生成ファイル</strong>です。手で編集せず、必ず上記コマンドで作り直してください。</li>
+        <li>📌 案件名（インシデント番号→案件名）は配布物に同梱の <code>list\inc_name_list.csv</code> から復元します。そのため <strong><code>インシデント管理表.xlsx</code> を持たない配布版でも</strong>、上記コマンドで案件名込みのデータを再生成できます（xlsx があればそちらをフォールバックに使用）。</li>
+
+        <h3>表示される主なグラフ</h3>
+
+        <table>
+            <tr>
+                <th>グラフ</th>
+                <th>内容</th>
+                <th>元データ</th>
+            </tr>
+            <tr>
+                <td>価値稼働工数 比率</td>
+                <td>全工数に対する価値稼働工数の割合</td>
+                <td><code>*_raw_data.csv</code></td>
+            </tr>
+            <tr>
+                <td>区分別 月平均工数（人工/月）</td>
+                <td>開発テーマ／インシデント等の区分別の人工数（ドーナツ）</td>
+                <td><code>*_person_months.csv</code></td>
+            </tr>
+            <tr>
+                <td>グループ別 累計コスト</td>
+                <td>グループ別の労務費＋経費（ドーナツ）</td>
+                <td><code>*_allocated_costs.csv</code></td>
+            </tr>
+            <tr>
+                <td>案件別 工数・コスト Top 20</td>
+                <td>上位案件の工数・コスト</td>
+                <td><code>*_allocated_costs.csv</code></td>
+            </tr>
+            <tr>
+                <th>各種 推移グラフ</th>
+                <th>月別の工数・コスト・インシデント件数の推移</th>
+                <th>各 <code><em>_</em>.csv</code></th>
+            </tr>
+        <h3>グラフの見方のポイント</h3>
+        </table>
+        <li>凡例（右側の色と名前）をクリックすると、その項目の表示/非表示を切り替えられます。</li>
+
+        <h3>うまく表示されないとき</h3>
+
+        <li>グラフが古い／空に見える → <code>python bin/generate_dashboard_data.py</code> を実行してから F5 で再読み込み。</li>
+        <li>文字化けする → ブラウザの文字コードが UTF-8 になっているか確認（通常は自動）。</li>
+
+        <hr>
+
+        <h2>付録 FAQ（よくある質問）</h2>
+
+        <p><strong>Q1: Stage 1 と Stage 2 をまとめて実行できませんか？</strong></p>
+        <p>A: いいえ。損益Excel待ちの期間があるため、2段階に分ける必要があります。</p>
+
+        <p><strong>Q2: 損益Excel がいつ来るかわかりません</strong></p>
+        <p>A: 経理チームに「損益Excel予定日」を事前に確認することをお勧めします。</p>
+
+        <p><strong>Q3: 毎月同じ手順ですか？</strong></p>
+        <p>A: はい。月号を変えるだけで、手順は同じです。</p>
+
+        <p><strong>Q4: Stage 1 で工数エラーが見つかりました。どうしましょう？</strong></p>
+        <p>A: 入力者に修正を依頼します。Stage 1 を月初に実行することで、月内に対応できます。</p>
+
+        <p><strong>Q5: 複数月をまとめて処理できますか？</strong></p>
+        <p>A: 1ヶ月ずつの実行を推奨します。</p>
+
+        <p><strong>Q6: データのバックアップは？</strong></p>
+        <p>A: results/ と keiri/ フォルダを定期的にコピーしておくことを推奨。</p>
+
+        <hr>
+
+        <p><strong>このマニュアルに関するご質問・改善提案は、システム部門までお寄せください。</strong></p>
+
+        <p><strong>最終更新</strong>: 2026-06-19</p>
+        <p><strong>バージョン</strong>: 2.3</p>
+
+    </div>
 </body>
 </html>

@@ -4,6 +4,37 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ---
 
+## エージェント実行順序（コード／ダッシュボード修正時の必須フロー）
+コード・ダッシュボードを修正したら以下を回す。**進行管理とファイル修正の割り振りはオーケストレーター（メイン）が行う。**
+
+1. **code-reviewer（レビュー専用・自身は一切修正しない）** → 指摘を出す。問題なければ REVIEW_COMPLETE。
+2. code-reviewer が問題を報告したら、**メインが修正担当サブエージェントへ指示を出す**（code-reviewer には修正させない）：
+   - コード／按分／ダッシュボードの修正 → **`manhours-cost-allocator`**
+   - ドキュメント（README / docstring / マニュアル）の修正 → **`doc-writer`**
+   修正が入ったら再度 code-reviewer に掛ける。
+3. REVIEW_COMPLETE 後 → **doc-writer**（DOC_COMPLETE まで）
+4. → **qa-tester**（QA_PASSED まで）。QA_FAILED の指摘も同様にメインが上記の担当へ振り、1 から回し直す。
+
+QA_PASSED 後に配布用ZIPを作成する。
+
+### ループ回数の上限
+- **全体で最大5回まで**（「code-reviewer 起動 → 修正 → 再レビュー」の周回、および QA_FAILED による回し直しを合算して数える）。
+- 5回で QA_PASSED に到達しない場合は、**未解決の指摘を列挙して停止し、メインがユーザーに報告**する（無限ループ禁止）。
+
+### 修正担当の固定（重要）
+- **code-reviewer は読み取り専用。ファイルを書き換えない。** 指摘の起票（場所・内容・重大度・推奨修正案・振り先）のみ。
+- 実際の修正は必ず **`manhours-cost-allocator`（コード）** または **`doc-writer`（ドキュメント）** が、メインの指示で行う。
+- code-reviewer はセキュリティ（プロンプトインジェクション／埋め込まれた悪意あるコード）も検査する。
+
+### 対象とトリガー
+- **`manhours-cost-allocator` が起動したら、必ずこのループに乗せること（例外なし）。** 按分ロジック・ダッシュボードの実装は cost-allocator が担当するが、その作業は単体で完了とはみなさず 1→4 を QA_PASSED まで回す。
+- **ダッシュボード修正も同じループの対象（例外なし）。** 対象は `dashboard/` 一式（`index.html` / `js/dashboard.js` / `css/dashboard.css` / `data/data.js`）と `bin/generate_dashboard_data.py`。直接編集でも cost-allocator 経由でも必ずループへ。`generate_dashboard_data.py` → `data/data.js` を変更したら qa-tester で再生成と表示整合まで確認する。
+
+サブエージェント定義は `.claude/agents/` に配置（`code-reviewer.md` / `doc-writer.md` / `qa-tester.md` / `manhours-cost-allocator.md`）。
+（個人環境では `manhours-cost-allocator` 完了時のリマインド等を `.claude/settings.local.json` のフックで補助している場合がある。）
+
+---
+
 ## Project Overview
 
 **工数集計・按分システム (manhours)** - A Python-based system for collecting, validating, and allocating employee work hours across projects, with cost distribution based on financial data from accounting teams.
@@ -47,6 +78,54 @@ member/, kintai/, soneki/, results/, keiri/  # Monthly data directories
 OPERATION_MANUAL.md     # Operational guide for data aggregators (集計担当者向け)
 REQUIREMENTS.md         # System requirements & architecture
 ```
+
+---
+
+## 配布パッケージ構成 (Distribution Packaging)
+
+運用者（集計担当者）へ配付する ZIP の標準構成。最新のフル構成版は
+`manhours_dist_full_YYYYMMDD.zip`（生成元フォルダ `manhours_dist_full_YYYYMMDD/`）。
+
+### 同梱するフォルダ・ファイル
+
+```
+manhours_dist_full_YYYYMMDD/
+├── bin/                 # 運用スクリプト + バッチ + env（下記「同梱する bin」参照）
+├── list/               # マスタ一式（_backup* / _generated は除外）
+├── member/             # 入力：月次工数 CSV（担当者別, CP932）
+├── kintai/             # 入力：勤怠 xls（YYYYMM_kintai.xls ＋ 年度サブフォルダ）
+├── soneki/             # 入力：損益 Excel（事業部別損益表_188/189.xlsx）。Stage 2 用
+├── results/            # 出力：raw_data / allocated_hours / allocated_costs / person_months / keiri_ratio（見本同梱）
+├── keiri/              # 出力：YYYYMM_keiri_ratio.csv（経理提出用・最終成果物。見本同梱）
+├── dashboard/          # KPI ダッシュボード一式（index.html, css/, js/, data/data.js）
+├── input_ui/           # 工数入力 UI（完成 HTML のみ：工数入力.html, インシデント管理表.html, README.md）
+├── docs/               # マニュアル：OPERATION_MANUAL.md/.html, REQUIREMENTS.md, 運用マニュアル PDF 各種
+└── requirements.txt
+```
+
+### 同梱する bin（運用サブセット）
+`aggregate_hours.py` / `verify_hours.py` / `allocate_actual_hours.py` /
+`calculate_person_months.py` / `export_keiri_csv.py` / `allocate_costs.py` /
+`rearrange_person.py` / `update_data.py` / `generate_dashboard_data.py` /
+`make_env.py`（env 再生成。OPERATION_MANUAL の初回セットアップ手順で参照） /
+`env` / `run_process.bat` / `run_allocate_costs.bat` / `run_all.bat`
+
+### 配布から除外するもの
+- **bin の開発・生成系**: `make_bat.py` / `gen_bat.py` / `make_run_all.py` /
+  `make_run_process.py` / `make_inc_list.py` / `build_inc_*.py` / `derive_inc_list.py` /
+  `md_to_html.py` / `_send_zip.py` / `input.txt` / `input_test.txt` / `__pycache__/` /
+  `run_process_test.bat`
+- **list**: `_backup_*` / `_generated`
+- **kintai**: `make_dummy_kintai.py`（ダミー勤怠生成の開発用。個人名ハードコードあり）
+- **soneki**: `test_csv` 等のテストデータ
+- **input_ui**: 再生成素材（`_template.html` / `_master_data.json` / `_inc_master_data.json` /
+  `encoding.min.js` / `build_master.py` / `build_inc_master.py`）
+- **ルート文書**: `CLAUDE.md`, `*作成プロンプト.md`, `TEST_GUIDE.md`, `TEST_REPORT.md`, テスト一式（`tests/`）
+
+### 注意点
+- **`bin/env` の1行目**は絶対パス（開発環境）。別環境へ展開する場合は展開先パスへ要書き換え。
+- 配付前に `python bin/make_bat.py --check` で bat 群がソースとバイト一致するか検証する。
+- マスタ更新時は `input_ui/工数入力.html` を再生成（手順は `input_ui/README.md`）。
 
 ---
 

@@ -17,6 +17,10 @@ bin/env
 # KPI/ダッシュボードのスクリーンショット（業務成果物）
 *.png
 
+# === 個人用ルール・ローカル設定（チームに共有しない） ===
+CLAUDE.local.md
+.claude/settings.local.json
+
 # === Python ===
 __pycache__/
 *.py[cod]
@@ -27,3 +31,16 @@ htmlcov/
 .venv/
 venv/
 myenv/
+
+# === 配布物・ビルド成果物（リポジトリに含めない） ===
+*.zip
+manhours_dist*/
+manhours_dist/
+
+# === 検証用オラクル・ダッシュボード生成データ（業務数値を含む） ===
+evaluation/
+dashboard/data/data.js
+
+# === 一時・プローブ・作業ファイル ===
+_inc_*.json
+*.pdf

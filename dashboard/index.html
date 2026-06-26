@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>工数・コスト分析ダッシュボード</title>
+  <link rel="stylesheet" href="css/bootstrap.min.css">
+  <link rel="stylesheet" href="css/dashboard.css">
+</head>
+<body>
+
+<!-- ナビゲーションバー（フィルター含む） -->
+<nav class="navbar navbar-dark bg-dark px-3 py-2">
+  <span class="navbar-brand fw-bold fs-6 me-4">工数・コスト分析ダッシュボード</span>
+  <div class="d-flex flex-wrap align-items-center gap-3">
+
+    <!-- 月範囲フィルター -->
+    <div class="d-flex align-items-center gap-1">
+      <label class="text-white-50 small mb-0">期間:</label>
+      <select id="monthFrom" class="form-select form-select-sm filter-select"></select>
+      <span class="text-white-50">〜</span>
+      <select id="monthTo" class="form-select form-select-sm filter-select"></select>
+    </div>
+
+    <!-- グループフィルター -->
+    <div class="d-flex align-items-center gap-2" id="groupFilters">
+      <label class="text-white-50 small mb-0">グループ:</label>
+      <div id="groupCheckboxes" class="d-flex flex-wrap gap-2"></div>
+    </div>
+
+  </div>
+</nav>
+
+<div class="container-fluid p-3">
+
+  <!-- タブナビゲーション -->
+  <ul class="nav nav-tabs mb-3" id="mainTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+      <button class="nav-link active" id="tab-overview-btn"
+              data-bs-toggle="tab" data-bs-target="#tabOverview"
+              type="button" role="tab">全体</button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="tab-person-btn"
+              data-bs-toggle="tab" data-bs-target="#tabPerson"
+              type="button" role="tab">個人別</button>
+    </li>
+  </ul>
+
+  <div class="tab-content">
+
+    <!-- ===== 全体タブ ===== -->
+    <div class="tab-pane fade show active" id="tabOverview" role="tabpanel">
+
+      <!-- KPI カード -->
+      <div class="row g-3 mb-3">
+        <div class="col-sm-6 col-lg-3">
+          <div class="card kpi-card border-0 shadow-sm h-100">
+            <div class="card-body">
+              <div class="kpi-label">価値稼働工数</div>
+              <div class="kpi-value" id="kpiValueHours">—</div>
+              <div class="kpi-unit">時間（開発テーマ＋インシデント）</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+          <div class="card kpi-card border-0 shadow-sm h-100">
+            <div class="card-body">
+              <div class="kpi-label">価値稼働比率</div>
+              <div class="kpi-value" id="kpiValueRatio">—</div>
+              <div class="kpi-unit">% （全工数に対する比率）</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+          <div class="card kpi-card border-0 shadow-sm h-100">
+            <div class="card-body">
+              <div class="kpi-label">累計部門費</div>
+              <div class="kpi-value" id="kpiTotalCost">—</div>
+              <div class="kpi-unit">千円</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+          <div class="card kpi-card border-0 shadow-sm h-100">
+            <div class="card-body">
+              <div class="kpi-label">平均担当案件数</div>
+              <div class="kpi-value" id="kpiProjectCount">—</div>
+              <div class="kpi-unit">件/人・月（平均）</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- グラフ上段: 区分別 / 部門費 / Top20 -->
+      <div class="row g-3 mb-3">
+
+        <div class="col-lg-4">
+          <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+              <div class="chart-title">区分別 月平均工数（人工/月）</div>
+              <div class="canvas-wrapper">
+                <canvas id="chartKubun"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-lg-4">
+          <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+              <div class="chart-title">グループ別 累計部門費</div>
+              <div class="canvas-wrapper">
+                <canvas id="chartCostTrend"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-lg-4">
+          <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+              <div class="chart-title">案件別 工数・コスト Top 20</div>
+              <div class="canvas-wrapper">
+                <canvas id="chartTopProjects"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- 一人当たり案件数推移 ＋ インシデント推移（横並び） -->
+      <div class="row g-3 mb-3">
+        <div class="col-lg-6">
+          <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+              <div class="chart-title">一人当たりの担当案件数推移（±1σ）</div>
+              <div class="canvas-wrapper">
+                <canvas id="chartProjectTrend"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-6">
+          <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+              <div class="chart-title">インシデント 案件 純増減 / スタック数 月別推移</div>
+              <div class="canvas-wrapper">
+                <canvas id="chartIncidentTrend"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /tabOverview -->
+
+    <!-- ===== 個人別タブ ===== -->
+    <div class="tab-pane fade" id="tabPerson" role="tabpanel">
+
+      <!-- 担当者選択 -->
+      <div class="d-flex align-items-center gap-2 mb-3">
+        <label class="fw-semibold small mb-0">担当者:</label>
+        <select id="personSelect" class="form-select form-select-sm" style="width:auto;min-width:8rem"></select>
+      </div>
+
+      <div class="row g-3 mb-3">
+
+        <!-- 案件あたり平均工数推移 -->
+        <div class="col-lg-6">
+          <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+              <div class="chart-title">月別 平均工数（h/件）・担当案件数（合計）</div>
+              <div class="canvas-wrapper">
+                <canvas id="chartPersonHours"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 担当案件数推移 -->
+        <div class="col-lg-6">
+          <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+              <div class="chart-title">担当テーマ別 工数（インシデント / 開発テーマ）</div>
+              <div class="canvas-wrapper">
+                <canvas id="chartPersonProjs"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div><!-- /tabPerson -->
+
+  </div><!-- /tab-content -->
+
+</div><!-- /container-fluid -->
+
+<script src="data/data.js"></script>
+<script src="js/chart.umd.min.js"></script>
+<script src="js/bootstrap.bundle.min.js"></script>
+<script src="js/dashboard.js"></script>
+</body>
+</html>

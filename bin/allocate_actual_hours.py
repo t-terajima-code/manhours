@@ -21,16 +21,33 @@ def compute_fiscal_year(target_month):
 
 
 def parse_env_file(env_file_path):
+    """envファイル(CP932)を読み込み、勤怠・マスタ・出力ディレクトリと標準時間を返す。
+
+    envファイルの参照行:
+        1行目: ルートディレクトリ（無効なら bin/ の親へフォールバック）
+        4行目: kintai サブディレクトリ名（勤怠HTML/xls）
+        5行目: list サブディレクトリ名（マスタCSV）
+        7行目: results サブディレクトリ名（入出力）
+        8行目: 標準勤務時間（h/日）。数値化できなければ 7.5 を既定値とする。
+
+    返り値:
+        (results_dir, kintai_dir, master_dir, standard_time) のタプル。
+    例外:
+        FileNotFoundError / ValueError（aggregate_hours.parse_env_file と同様）。
+    """
     if not os.path.exists(env_file_path):
         raise FileNotFoundError(f"設定ファイル '{env_file_path}' が見つかりません。")
-        
+
     with open(env_file_path, 'r', encoding='cp932') as f:
         lines = [line.strip() for line in f if line.strip()]
         
     if len(lines) < 8:
         raise ValueError("envファイルの行数が不足しています。少なくとも8行必要です。")
         
-    root_dir = lines[0]
+    # env 1行目の絶対パスを優先。配布先で別PC/別ドライブに移動して 1行目が実在しない場合は、
+    # env の場所(bin/)の親=パッケージルートを自動解決して動くようにする。
+    _auto_root = os.path.dirname(os.path.dirname(os.path.abspath(env_file_path)))
+    root_dir = lines[0] if os.path.isdir(lines[0]) else _auto_root
     kintai_dir = os.path.join(root_dir, lines[3].lstrip('\\/'))
     master_dir = os.path.join(root_dir, lines[4].lstrip('\\/'))
     results_dir = os.path.join(root_dir, lines[6].lstrip('\\/'))
@@ -43,6 +60,12 @@ def parse_env_file(env_file_path):
     return results_dir, kintai_dir, master_dir, standard_time
 
 def get_kintai_name(kintai_dict, m_name):
+    """工数側の担当者名 m_name に対応する勤怠側の氏名キーを返す。
+
+    空白（半角・全角）を除去して完全一致を試み、無ければ部分一致（どちらかが
+    他方を含む）で照合する。対応が見つからなければ None を返す。
+    工数CSVと勤怠データで氏名の表記揺れ（空白有無等）を吸収するための関数。
+    """
     clean_m = m_name.replace(' ', '').replace('　', '')
     if clean_m in kintai_dict:
         return clean_m
@@ -52,6 +75,19 @@ def get_kintai_name(kintai_dict, m_name):
     return None
 
 def parse_kintai_html(kintai_file_path):
+    """勤怠データ（HTMLテーブル形式の .xls、UTF-8）をパースして実働時間と休暇を抽出する。
+
+    テーブルから「名前」「実働時間」の列見出しを検出し、各従業員行を読み取る。
+    あわせて LEAVE_COLUMNS（有休・欠勤・公休等）に該当する列を休暇日数として収集する。
+    氏名先頭の英数字（社員番号等）と空白は除去して正規化する。
+
+    引数:
+        kintai_file_path: 勤怠ファイルのパス（HTMLテーブルを含む .xls）。
+    返り値:
+        (employee_work_hours, employee_leaves) のタプル。
+        employee_work_hours: {氏名: 実働時間(h)}
+        employee_leaves:     {氏名: {休暇種別: 日数}}
+    """
     employee_work_hours = {}
     employee_leaves = {}
     
@@ -114,6 +150,18 @@ def parse_kintai_html(kintai_file_path):
     return employee_work_hours, employee_leaves
 
 def main():
+    """エントリポイント: raw_data.csv と勤怠データから実働時間ベースの按分CSVを出力する。
+
+    処理の流れ:
+        1. --month / --env / --data を解釈し、results・kintai・list ディレクトリと標準時間を取得。
+        2. 勤怠データ（{YYYYMM}*kintai*.xls）をパースし、実働時間・休暇日数を取得。
+        3. nichijou_list から「休暇」の内外製区分・品区コードを取得。
+        4. raw_data.csv の対象月の各タスク行と担当者別時間を読み込み、合計時間を付与して出力。
+        5. 休暇日数×標準時間を休暇換算工数として、新卒工場実習（任意）とともに追記。
+
+    出力先: results/{YYYYMM}_allocated_hours.csv（CP932）。
+    勤怠に不在の担当者は休暇0として扱う。
+    """
     parser = argparse.ArgumentParser()
     parser.add_argument('--month', type=str, required=True, help='YYYYMM')
     parser.add_argument('--env', type=str, default='env')

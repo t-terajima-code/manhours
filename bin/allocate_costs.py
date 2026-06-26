@@ -5,9 +5,11 @@ import os
 import glob
 
 def parse_env_file(env_file_path):
-    """
-    envファイルを読み込み、ディレクトリ構成を取得する
-    1行目：ルート / 6行目：soneki / 7行目：results
+    """envファイル(CP932)を読み込み、(results_dir, soneki_dir) を返す。
+
+    参照行: 1行目=ルート / 6行目=soneki / 7行目=results。
+    1行目の絶対パスが実在しない場合は env の場所(bin/)の親をルートに採用する（可搬性）。
+    例外: FileNotFoundError（未存在）、ValueError（8行未満）。
     """
     if not os.path.exists(env_file_path):
         raise FileNotFoundError(f"設定ファイル '{env_file_path}' が見つかりません。")
@@ -18,7 +20,10 @@ def parse_env_file(env_file_path):
     if len(lines) < 8:
         raise ValueError("envファイルの行数が不足しています。少なくとも8行必要です。")
         
-    root_dir = lines[0]
+    # env 1行目の絶対パスを優先。配布先で別PC/別ドライブに移動して 1行目が実在しない場合は、
+    # env の場所(bin/)の親=パッケージルートを自動解決して動くようにする。
+    _auto_root = os.path.dirname(os.path.dirname(os.path.abspath(env_file_path)))
+    root_dir = lines[0] if os.path.isdir(lines[0]) else _auto_root
     
     # 6行目 (index 5) が sonekiディレクトリ
     soneki_dir = os.path.join(root_dir, lines[5].lstrip('\\/'))
@@ -133,6 +138,18 @@ def is_target_record(naigai, hinku):
     return False
 
 def main():
+    """エントリポイント(Stage 2): 損益Excelの労務費・経費を工数比率で案件へ按分する。
+
+    処理の流れ:
+        1. --month / --env / --data を解釈し、results・soneki ディレクトリを取得。
+        2. raw_data.csv（results/）から対象月の価値稼働工数（is_target_record で判定）を集計し、
+           総対象工数・担当者別対象工数・有効担当者数（対象工数>0の人数）を求める。
+        3. soneki/ のうちファイル名に期番号を含む損益Excel(*.xlsx)を選び、get_soneki_costs で
+           当月シート（例: '4月'）の労務費・経費（研究開発の全社実績金額）を取得。
+        4. 案件ごとの按分比率（案件工数/総対象工数）で投入人員・労務費・経費を按分し出力。
+
+    出力先: results/{YYYYMM}_allocated_costs.csv（CP932）。合計行・設定値行を併記する。
+    """
     parser = argparse.ArgumentParser(description='投入人員・労務費・経費の按分CSV出力スクリプト')
     parser.add_argument('--env', type=str, default='env', help='設定(env)ファイルのパス')
     parser.add_argument('--data', type=str, default='raw_data.csv', help='集計元のデータファイル名')

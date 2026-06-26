@@ -23,7 +23,10 @@ def parse_env_file(env_file_path):
         lines = [line.strip() for line in f if line.strip()]
     if len(lines) < 5:
         raise ValueError("envファイルの行数が不足しています。")
-    root_dir = lines[0]
+    # env 1行目の絶対パスを優先。配布先で別PC/別ドライブに移動して 1行目が実在しない場合は、
+    # env の場所(bin/)の親=パッケージルートを自動解決して動くようにする。
+    _auto_root = os.path.dirname(os.path.dirname(os.path.abspath(env_file_path)))
+    root_dir = lines[0] if os.path.isdir(lines[0]) else _auto_root
     list_dir = os.path.join(root_dir, lines[4].lstrip('\\/'))
     return root_dir, list_dir
 
@@ -34,17 +37,18 @@ def extract_period(sheet_name):
     return int(m.group(1)) if m else None
 
 
-def detect_header(ws):
-    """ヘッダー行を探し、(header_row_idx, {key: col_idx}) を返す。"""
+def detect_header(rows):
+    """ヘッダー行を探し、(header_row_idx, {key: col_idx}) を返す。いずれも0始まり。
+    rows は ws.iter_rows(values_only=True) を list 化したもの（read_only対応のため
+    ランダムアクセスでなくメモリ上の2次元リストを走査する）。"""
     targets = {
         'inc_num': lambda s: 'ｲﾝｼﾃﾞﾝﾄ' in s or 'インシデント' in s,
         'naigai': lambda s: 'ＮＧＫ' in s or 'NGK' in s.upper(),
         'hinku': lambda s: s == '品区',
     }
-    for row_idx in range(1, min(15, ws.max_row + 1)):
+    for row_idx in range(min(15, len(rows))):
         cols = {}
-        for c in range(1, ws.max_column + 1):
-            v = ws.cell(row_idx, c).value
+        for c, v in enumerate(rows[row_idx]):
             if v is None:
                 continue
             s = str(v).strip()
@@ -65,17 +69,24 @@ def normalize_int_str(v):
     return str(v).strip()
 
 
-def extract_data(ws, sheet_name):
-    """シートから (inc_num, naigai, hinku) のリストとエラー一覧を返す。"""
-    header_row, cols = detect_header(ws)
+def extract_data(rows, sheet_name):
+    """シートから (inc_num, naigai, hinku) のリストとエラー一覧を返す。
+    rows は ws.iter_rows(values_only=True) を list 化したもの。"""
+    header_row, cols = detect_header(rows)
     data = []
     errors = []
-    seen = {}  # inc_num -> (row_idx, naigai, hinku)
+    seen = {}  # inc_num -> (row_no, naigai, hinku)
 
-    for row_idx in range(header_row + 1, ws.max_row + 1):
-        inc_raw = ws.cell(row_idx, cols['inc_num']).value
-        naigai_raw = ws.cell(row_idx, cols['naigai']).value
-        hinku_raw = ws.cell(row_idx, cols['hinku']).value
+    def get(row, key):
+        c = cols[key]
+        return row[c] if c < len(row) else None
+
+    for row_idx in range(header_row + 1, len(rows)):
+        row = rows[row_idx]
+        row_no = row_idx + 1  # 表示用に1始まりへ
+        inc_raw = get(row, 'inc_num')
+        naigai_raw = get(row, 'naigai')
+        hinku_raw = get(row, 'hinku')
 
         # 全カラム空 → 空行としてスキップ（エラーにしない）
         if inc_raw is None and naigai_raw is None and hinku_raw is None:
@@ -83,13 +94,13 @@ def extract_data(ws, sheet_name):
 
         # 各セルの空チェック
         if inc_raw is None or str(inc_raw).strip() == '':
-            errors.append(f"  [{sheet_name}] 行{row_idx}: インシデント№が空 (ＮＧＫｙ={naigai_raw}, 品区={hinku_raw})")
+            errors.append(f"  [{sheet_name}] 行{row_no}: インシデント№が空 (ＮＧＫｙ={naigai_raw}, 品区={hinku_raw})")
             continue
         if naigai_raw is None or str(naigai_raw).strip() == '':
-            errors.append(f"  [{sheet_name}] 行{row_idx}: ＮＧＫｙが空 (ｲﾝｼﾃﾞﾝﾄ№={inc_raw}, 品区={hinku_raw})")
+            errors.append(f"  [{sheet_name}] 行{row_no}: ＮＧＫｙが空 (ｲﾝｼﾃﾞﾝﾄ№={inc_raw}, 品区={hinku_raw})")
             continue
         if hinku_raw is None or str(hinku_raw).strip() == '':
-            errors.append(f"  [{sheet_name}] 行{row_idx}: 品区が空 (ｲﾝｼﾃﾞﾝﾄ№={inc_raw}, ＮＧＫｙ={naigai_raw})")
+            errors.append(f"  [{sheet_name}] 行{row_no}: 品区が空 (ｲﾝｼﾃﾞﾝﾄ№={inc_raw}, ＮＧＫｙ={naigai_raw})")
             continue
 
         # 正規化
@@ -99,7 +110,7 @@ def extract_data(ws, sheet_name):
 
         # ＮＧＫｙ の値域チェック
         if naigai not in VALID_NAIGAI:
-            errors.append(f"  [{sheet_name}] 行{row_idx}: ＮＧＫｙ='{naigai}' は無効 (許容: N,G,K,y)")
+            errors.append(f"  [{sheet_name}] 行{row_no}: ＮＧＫｙ='{naigai}' は無効 (許容: N,G,K,y)")
             continue
 
         # 重複チェック
@@ -107,14 +118,14 @@ def extract_data(ws, sheet_name):
             prev_row, prev_n, prev_h = seen[inc_num]
             if prev_n != naigai or prev_h != hinku:
                 errors.append(
-                    f"  [{sheet_name}] 行{row_idx}: ｲﾝｼﾃﾞﾝﾄ№={inc_num} 値矛盾 "
+                    f"  [{sheet_name}] 行{row_no}: ｲﾝｼﾃﾞﾝﾄ№={inc_num} 値矛盾 "
                     f"(前回行{prev_row}: {prev_n}/{prev_h}, 今回: {naigai}/{hinku})"
                 )
                 continue
             # 同一値の重複は黙ってスキップ
             continue
 
-        seen[inc_num] = (row_idx, naigai, hinku)
+        seen[inc_num] = (row_no, naigai, hinku)
         data.append((inc_num, naigai, hinku))
 
     return data, errors
@@ -148,7 +159,9 @@ def main():
         print(f"【エラー】インシデント管理表が見つかりません: {xlsx_path}")
         return
 
-    wb = openpyxl.load_workbook(xlsx_path, data_only=True)
+    # read_only=True: 埋め込み画像の読み込みを回避し、新しい openpyxl でも
+    # クラッシュせず読めるようにする（従来運用の堅牢化）
+    wb = openpyxl.load_workbook(xlsx_path, data_only=True, read_only=True)
 
     # 対象シート選定
     targets = []
@@ -172,13 +185,17 @@ def main():
     results = []
     for sheet_name, period in targets:
         ws = wb[sheet_name]
+        rows = list(ws.iter_rows(values_only=True))
         try:
-            data, errors = extract_data(ws, sheet_name)
+            data, errors = extract_data(rows, sheet_name)
         except ValueError as e:
             print(f"【エラー】シート '{sheet_name}': {e}")
+            wb.close()
             return
         all_errors.extend(errors)
         results.append((sheet_name, period, data))
+
+    wb.close()
 
     if all_errors:
         print("【エラー】以下の不正データを修正してから再実行してください:")

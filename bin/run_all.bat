@@ -2,12 +2,15 @@
 pushd "%~dp0"
 setlocal enabledelayedexpansion
 
-REM python コマンドが使えない場合は py にフォールバック
-where python > nul 2>&1
-if errorlevel 1 (
-    set PYTHON=py
-) else (
-    set PYTHON=python
+REM Python 実行コマンドの判定（MS Store のダミー python 対策。実際に動くコマンドを採用）
+REM まず py ランチャーを試し、ダメなら python。どちらも -c で実行確認する。
+set "PYTHON="
+py -c "import sys" >nul 2>&1 && set "PYTHON=py"
+if not defined PYTHON python -c "import sys" >nul 2>&1 && set "PYTHON=python"
+if not defined PYTHON (
+    echo [エラー] 動作する Python が見つかりません。Python をインストールするか py ランチャーを有効にしてください。
+    pause
+    exit /b
 )
 
 echo ======================================================
@@ -40,6 +43,9 @@ for /f "usebackq tokens=*" %%a in ("env") do (
     if !count! == 4 set "KINTAI_SUB=%%a"
     if !count! == 7 set "RESULTS_SUB=%%a"
 )
+
+REM env 1行目が実在しなければパッケージルート(このbatの親)を使う（別PC/別ドライブ対応・Python側と整合）
+if not exist "!ROOT_DIR!\" set "ROOT_DIR=%~dp0.."
 
 REM 先頭の \ を除去してパスを結合
 set "MEMBER_DIR=!ROOT_DIR!\!MEMBER_SUB:\=!"
